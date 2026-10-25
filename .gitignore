@@ -1,0 +1,7 @@
+taskmanagerok
+TaskManagerOK.AppImage
+*.o
+build/
+locale/
+*.deb
+*.png.tmp

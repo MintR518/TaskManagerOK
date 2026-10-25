@@ -1,0 +1,832 @@
+# SOME DESCRIPTIVE TITLE.
+# This file is put in the public domain.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-25 05:36+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/main.c:114 src/main.c:2659
+msgid "CPU"
+msgstr ""
+
+#: src/main.c:114 src/main.c:1081 src/main.c:1450 src/main.c:2659
+msgid "Memory"
+msgstr ""
+
+#: src/main.c:114 src/main.c:2659
+msgid "Disk"
+msgstr ""
+
+#: src/main.c:114
+msgid "Network"
+msgstr ""
+
+#: src/main.c:115
+msgid "GPU"
+msgstr ""
+
+#: src/main.c:115 src/main.c:2015
+#, c-format
+msgid "Temperature"
+msgstr ""
+
+#: src/main.c:140 src/main.c:781 src/main.c:801 src/main.c:1419
+#, c-format
+msgid "Processes"
+msgstr ""
+
+#: src/main.c:140 src/main.c:2511
+msgid "Performance"
+msgstr ""
+
+#: src/main.c:140 src/main.c:1009
+msgid "Startup"
+msgstr ""
+
+#: src/main.c:140 src/main.c:1406
+msgid "Details"
+msgstr ""
+
+#: src/main.c:141 src/main.c:1689
+msgid "Information"
+msgstr ""
+
+#: src/main.c:273 src/main.c:1806 src/main.c:1808 src/main.c:1982
+#: src/main.c:1988 src/main.c:1993 src/main.c:2012
+#, c-format
+msgid "%.0f °C"
+msgstr ""
+
+#: src/main.c:275 src/main.c:582
+#, c-format
+msgid "%.1f MB/s"
+msgstr ""
+
+#: src/main.c:277 src/main.c:584
+#, c-format
+msgid "%.0f KB/s"
+msgstr ""
+
+#: src/main.c:286
+#, c-format
+msgid "%.2f MB/s"
+msgstr ""
+
+#: src/main.c:441
+#, c-format
+msgid "  -%d s"
+msgstr ""
+
+#: src/main.c:489
+msgid "-60 s"
+msgstr ""
+
+#: src/main.c:491 src/main.c:493
+msgid "now"
+msgstr ""
+
+#: src/main.c:568
+#, c-format
+msgid "%.1f%%"
+msgstr ""
+
+#: src/main.c:573 src/main.c:1173 src/main.c:1940
+#, c-format
+msgid "%.2f GiB"
+msgstr ""
+
+#: src/main.c:575
+#, c-format
+msgid "%.0f MiB"
+msgstr ""
+
+#: src/main.c:784 src/main.c:1409
+msgid "Collecting the process list"
+msgstr ""
+
+#: src/main.c:786 src/main.c:1411
+#, c-format
+msgid "%d processes  ·  updated every %d s"
+msgstr ""
+
+#: src/main.c:794
+#, c-format
+msgid "Total CPU"
+msgstr ""
+
+#: src/main.c:795 src/main.c:1937 src/main.c:1943 src/main.c:2018
+#, c-format
+msgid "%.2f / %.2f GiB"
+msgstr ""
+
+#: src/main.c:797
+#, c-format
+msgid "Memory in use"
+msgstr ""
+
+#: src/main.c:799
+#, c-format
+msgid "Disk activity"
+msgstr ""
+
+#: src/main.c:800
+#, c-format
+msgid "%d  ·  %d yours"
+msgstr ""
+
+#: src/main.c:816 src/main.c:1031
+#, c-format
+msgid "Enabled"
+msgstr ""
+
+#: src/main.c:816 src/main.c:1034
+#, c-format
+msgid "Disabled"
+msgstr ""
+
+#: src/main.c:816 src/main.c:1038
+#, c-format
+msgid "Other desktop"
+msgstr ""
+
+#: src/main.c:893
+msgid "Select an entry to change it"
+msgstr ""
+
+#: src/main.c:895
+msgid ""
+"This entry names another desktop; what decides is its OnlyShowIn line, not a "
+"switch"
+msgstr ""
+
+#: src/main.c:897
+msgid "The autostart directory of this user is not writable"
+msgstr ""
+
+#: src/main.c:901
+msgid "Do not start this at login"
+msgstr ""
+
+#: src/main.c:901
+msgid "Start this at login"
+msgstr ""
+
+#: src/main.c:905
+msgid "Enable"
+msgstr ""
+
+#: src/main.c:905 src/main.c:2754
+msgid "Disable"
+msgstr ""
+
+#: src/main.c:927
+#, c-format
+msgid "Could not change %s: %s"
+msgstr ""
+
+#: src/main.c:973 src/main.c:1522
+msgid "User"
+msgstr ""
+
+#: src/main.c:973 src/main.c:1450
+msgid "System"
+msgstr ""
+
+#: src/main.c:998
+msgid "No autostart entries were found in the directories this session reads."
+msgstr ""
+
+#: src/main.c:1001
+msgid ""
+"Only entries that name another desktop are never started here. The list "
+"stops at the first 160 entries."
+msgstr ""
+
+#: src/main.c:1005
+msgid "Only entries that name another desktop are never started here."
+msgstr ""
+
+#: src/main.c:1018
+msgid "No entries"
+msgstr ""
+
+#: src/main.c:1023
+#, c-format
+msgid "%d entries  ·  %d start at login"
+msgstr ""
+
+#: src/main.c:1028
+#, c-format
+msgid "Entries"
+msgstr ""
+
+#: src/main.c:1079 src/main.c:2659 src/main.c:2718
+msgid "Name"
+msgstr ""
+
+#: src/main.c:1079
+msgid "PID"
+msgstr ""
+
+#: src/main.c:1079
+msgid "Status"
+msgstr ""
+
+#: src/main.c:1080
+msgid "User name"
+msgstr ""
+
+#: src/main.c:1080
+msgid "CPU time"
+msgstr ""
+
+#: src/main.c:1080
+msgid "Time elapsed"
+msgstr ""
+
+#: src/main.c:1081
+msgid "Disk read"
+msgstr ""
+
+#: src/main.c:1081
+msgid "Disk write"
+msgstr ""
+
+#: src/main.c:1082 src/main.c:1432
+#, c-format
+msgid "Threads"
+msgstr ""
+
+#: src/main.c:1082
+msgid "Priority"
+msgstr ""
+
+#: src/main.c:1082
+msgid "Parent PID"
+msgstr ""
+
+#: src/main.c:1083
+msgid "Command line"
+msgstr ""
+
+#: src/main.c:1105
+msgid "Running"
+msgstr ""
+
+#: src/main.c:1107
+msgid "Sleeping"
+msgstr ""
+
+#: src/main.c:1109 src/main.c:1427
+#, c-format
+msgid "Waiting for disk"
+msgstr ""
+
+#: src/main.c:1111
+msgid "Zombie"
+msgstr ""
+
+#: src/main.c:1114
+msgid "Stopped"
+msgstr ""
+
+#: src/main.c:1116
+msgid "Idle"
+msgstr ""
+
+#: src/main.c:1150
+#, c-format
+msgid "%lu:%02lu:%02lu"
+msgstr ""
+
+#: src/main.c:1162
+#, c-format
+msgid "%lu d %02lu:%02lu"
+msgstr ""
+
+#: src/main.c:1171
+#, c-format
+msgid "%.2f TiB"
+msgstr ""
+
+#: src/main.c:1175
+#, c-format
+msgid "%.1f MiB"
+msgstr ""
+
+#: src/main.c:1177
+#, c-format
+msgid "%.0f KiB"
+msgstr ""
+
+#: src/main.c:1179
+#, c-format
+msgid "%llu B"
+msgstr ""
+
+#: src/main.c:1188
+#, c-format
+msgid "real-time %ld"
+msgstr ""
+
+#: src/main.c:1190
+#, c-format
+msgid "nice %d"
+msgstr ""
+
+#: src/main.c:1209
+#, c-format
+msgid "(%c)"
+msgstr ""
+
+#: src/main.c:1420
+#, c-format
+msgid "%d  ·  %.0f MiB"
+msgstr ""
+
+#: src/main.c:1421
+#, c-format
+msgid "Yours  ·  memory"
+msgstr ""
+
+#: src/main.c:1450 src/main.c:1989
+#, c-format
+msgid "Processor"
+msgstr ""
+
+#: src/main.c:1451
+msgid "Motherboard"
+msgstr ""
+
+#: src/main.c:1451
+msgid "Video"
+msgstr ""
+
+#: src/main.c:1451
+msgid "Disks"
+msgstr ""
+
+#: src/main.c:1468
+msgid "Desktop computer"
+msgstr ""
+
+#: src/main.c:1469
+msgid "Low profile desktop"
+msgstr ""
+
+#: src/main.c:1470
+msgid "Tower"
+msgstr ""
+
+#: src/main.c:1471
+msgid "Portable"
+msgstr ""
+
+#: src/main.c:1472
+msgid "Notebook"
+msgstr ""
+
+#: src/main.c:1473
+msgid "Hand held"
+msgstr ""
+
+#: src/main.c:1474
+msgid "Docking station"
+msgstr ""
+
+#: src/main.c:1475
+msgid "All in one"
+msgstr ""
+
+#: src/main.c:1476
+msgid "Subnotebook"
+msgstr ""
+
+#: src/main.c:1477
+msgid "Lunch box"
+msgstr ""
+
+#: src/main.c:1478
+msgid "Server chassis"
+msgstr ""
+
+#: src/main.c:1479
+msgid "Blade"
+msgstr ""
+
+#: src/main.c:1511
+msgid "Operating system"
+msgstr ""
+
+#: src/main.c:1512
+msgid "Kernel"
+msgstr ""
+
+#: src/main.c:1513
+msgid "Architecture"
+msgstr ""
+
+#: src/main.c:1519
+msgid "Session"
+msgstr ""
+
+#: src/main.c:1521
+msgid "Computer name"
+msgstr ""
+
+#: src/main.c:1524
+msgid "Uptime"
+msgstr ""
+
+#: src/main.c:1526
+msgid "Model"
+msgstr ""
+
+#: src/main.c:1527
+msgid "Vendor"
+msgstr ""
+
+#: src/main.c:1530
+msgid "Cores"
+msgstr ""
+
+#: src/main.c:1531
+msgid "Logical processors"
+msgstr ""
+
+#: src/main.c:1538
+msgid "Data"
+msgstr ""
+
+#: src/main.c:1539
+msgid "Instruction"
+msgstr ""
+
+#: src/main.c:1540
+msgid "Unified"
+msgstr ""
+
+#: src/main.c:1550
+#, c-format
+msgid "Cache L%d"
+msgstr ""
+
+#: src/main.c:1554
+msgid "Speed range"
+msgstr ""
+
+#: src/main.c:1554
+#, c-format
+msgid "%.2f–%.2f GHz"
+msgstr ""
+
+#: src/main.c:1556
+msgid "Current speed"
+msgstr ""
+
+#: src/main.c:1556 src/main.c:1918
+#, c-format
+msgid "%.2f GHz"
+msgstr ""
+
+#: src/main.c:1557
+msgid "Speed control"
+msgstr ""
+
+#: src/main.c:1560 src/main.c:1968
+#, c-format
+msgid "Total"
+msgstr ""
+
+#: src/main.c:1562
+msgid "Free"
+msgstr ""
+
+#: src/main.c:1563
+msgid "Type"
+msgstr ""
+
+#: src/main.c:1567
+msgid "Modules"
+msgstr ""
+
+#: src/main.c:1573
+msgid "Swap"
+msgstr ""
+
+#: src/main.c:1576
+msgid "Manufacturer"
+msgstr ""
+
+#: src/main.c:1577
+msgid "Product"
+msgstr ""
+
+#: src/main.c:1583
+msgid "Board"
+msgstr ""
+
+#: src/main.c:1590
+msgid "BIOS"
+msgstr ""
+
+#: src/main.c:1592
+msgid "BIOS date"
+msgstr ""
+
+#: src/main.c:1596 src/main.c:1598
+msgid "Chassis"
+msgstr ""
+
+#: src/main.c:1598
+#, c-format
+msgid "Type %d"
+msgstr ""
+
+#: src/main.c:1601
+msgid "Adapter"
+msgstr ""
+
+#: src/main.c:1604
+#, c-format
+msgid "%s (%s)"
+msgstr ""
+
+#: src/main.c:1607
+msgid "Driver"
+msgstr ""
+
+#: src/main.c:1621
+#, c-format
+msgid "Display %d"
+msgstr ""
+
+#: src/main.c:1623
+msgid "Display"
+msgstr ""
+
+#: src/main.c:1625
+#, c-format
+msgid "%d×%d  ·  %.2f Hz"
+msgstr ""
+
+#: src/main.c:1627
+#, c-format
+msgid "%d×%d"
+msgstr ""
+
+#: src/main.c:1712
+msgid ""
+"CPU and memory cover every process; disk activity is only readable for the "
+"processes you own."
+msgstr ""
+
+#: src/main.c:1714
+msgid ""
+"The byte counters come from the kernel's per-process io file, which only "
+"your own processes let anyone read."
+msgstr ""
+
+#: src/main.c:1852
+#, c-format
+msgid "%s  ·  %.2f GiB  ·  cache %.2f GiB"
+msgstr ""
+
+#: src/main.c:1855
+#, c-format
+msgid "Installed: %.2f GiB  ·  cache %.2f GiB"
+msgstr ""
+
+#: src/main.c:1866
+#, c-format
+msgid "%s  ·  %ld Mbit/s"
+msgstr ""
+
+#: src/main.c:1868
+#, c-format
+msgid "%s  ·  Wi-Fi  ·  %d dBm  ·  quality %d"
+msgstr ""
+
+#: src/main.c:1871
+#, c-format
+msgid "%s  ·  link speed unavailable"
+msgstr ""
+
+#: src/main.c:1884
+#, c-format
+msgid "%d sensors  ·  highest %s  ·  limit %.0f °C"
+msgstr ""
+
+#: src/main.c:1887
+#, c-format
+msgid "%d sensors  ·  highest %s"
+msgstr ""
+
+#: src/main.c:1901
+msgid "This driver does not report GPU utilisation"
+msgstr ""
+
+#: src/main.c:1915 src/main.c:1935 src/main.c:1949 src/main.c:2009
+#, c-format
+msgid "Load"
+msgstr ""
+
+#: src/main.c:1920 src/main.c:2008 src/main.c:2014
+#, c-format
+msgid "Unavailable"
+msgstr ""
+
+#: src/main.c:1921
+#, c-format
+msgid "Speed"
+msgstr ""
+
+#: src/main.c:1923
+#, c-format
+msgid "%d processes · %d cores"
+msgstr ""
+
+#: src/main.c:1924
+#, c-format
+msgid "System processor"
+msgstr ""
+
+#: src/main.c:1928
+#, c-format
+msgid "Uptime · %.2f average"
+msgstr ""
+
+#: src/main.c:1938
+#, c-format
+msgid "In use / Total"
+msgstr ""
+
+#: src/main.c:1941
+#, c-format
+msgid "Available"
+msgstr ""
+
+#: src/main.c:1945
+#, c-format
+msgid "Paging file"
+msgstr ""
+
+#: src/main.c:1952
+#, c-format
+msgid "Read"
+msgstr ""
+
+#: src/main.c:1955
+#, c-format
+msgid "Write"
+msgstr ""
+
+#: src/main.c:1957
+#, c-format
+msgid "%.0f GB"
+msgstr ""
+
+#: src/main.c:1958
+#, c-format
+msgid "Capacity"
+msgstr ""
+
+#: src/main.c:1962
+#, c-format
+msgid "Receive"
+msgstr ""
+
+#: src/main.c:1965
+#, c-format
+msgid "Send"
+msgstr ""
+
+#: src/main.c:1970
+#, c-format
+msgid "%.1f GiB received · %.1f GiB sent"
+msgstr ""
+
+#: src/main.c:1972
+#, c-format
+msgid "Interface totals"
+msgstr ""
+
+#: src/main.c:1979 src/main.c:1998
+#, c-format
+msgid "Sensors"
+msgstr ""
+
+#: src/main.c:1983
+#, c-format
+msgid "Highest"
+msgstr ""
+
+#: src/main.c:1994 src/main.c:2618
+#, c-format
+msgid "Limit"
+msgstr ""
+
+#: src/main.c:1997
+#, c-format
+msgid "%d readable"
+msgstr ""
+
+#: src/main.c:2020
+#, c-format
+msgid "Dedicated memory"
+msgstr ""
+
+#: src/main.c:2087
+msgid "this is the task manager itself"
+msgstr ""
+
+#: src/main.c:2093
+#, c-format
+msgid "it is %s's process"
+msgstr ""
+
+#: src/main.c:2097
+msgid "it has already finished"
+msgstr ""
+
+#: src/main.c:2107
+#, c-format
+msgid "%s — %s"
+msgstr ""
+
+#: src/main.c:2107 src/main.c:2109 src/main.c:2263
+msgid "End task"
+msgstr ""
+
+#: src/main.c:2128
+#, c-format
+msgid "“%s” did not answer and cannot be terminated."
+msgstr ""
+
+#: src/main.c:2146
+#, c-format
+msgid "“%s” had already ended."
+msgstr ""
+
+#: src/main.c:2148
+#, c-format
+msgid "Could not signal “%s”: %s"
+msgstr ""
+
+#: src/main.c:2156
+#, c-format
+msgid "PID %d  ·  %s  ·  %s"
+msgstr ""
+
+#: src/main.c:2158
+#, c-format
+msgid ""
+"%s\n"
+"\n"
+"The process gets no chance to save what it has open. It is asked to exit "
+"first, and if it is still there in %d s it is terminated."
+msgstr ""
+
+#: src/main.c:2163
+#, c-format
+msgid "End “%s”?"
+msgstr ""
+
+#: src/main.c:2165
+msgid "_Cancel"
+msgstr ""
+
+#: src/main.c:2166
+msgid "_End task"
+msgstr ""
+
+#: src/main.c:2618
+msgid "Sensor"
+msgstr ""
+
+#: src/main.c:2618
+msgid "Value"
+msgstr ""
+
+#: src/main.c:2718
+msgid "State"
+msgstr ""
+
+#: src/main.c:2718
+msgid "Source"
+msgstr ""
+
+#: src/main.c:2718
+msgid "Command"
+msgstr ""

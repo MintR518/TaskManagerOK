@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=TaskManagerOK
+GenericName=Task Manager
+GenericName[uk]=Диспетчер завдань
+Comment=Windows 11 style task manager, performance tab
+Comment[uk]=Диспетчер завдань у стилі Windows 11, вкладка «Продуктивність»
+Exec=taskmanagerok
+Icon=taskmanagerok
+Terminal=false
+Categories=System;Monitor;
+Keywords=task manager;performance;monitor;cpu;memory;disk;network;
+StartupNotify=false
