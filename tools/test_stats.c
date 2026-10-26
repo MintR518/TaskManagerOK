@@ -280,5 +280,21 @@ int main(void) {
     printf("  %-10s %-24s %-8s %7.1f / %7.1f GiB free\n", inf.fs[i].dev, inf.fs[i].mnt,
            inf.fs[i].fstype, inf.fs[i].free / 1073741824.0, inf.fs[i].total / 1073741824.0);
 
+  static BatteryTable bt;
+  t0 = ms_now();
+  c0 = cpu_ms();
+  stats_scan_batteries(&bt);
+  printf("battery      : %.2f ms cpu for one scan  (%d rows, external %d, overflow %d)\n",
+         cpu_ms() - c0, bt.n, bt.external, bt.overflow);
+  for (int i = 0; i < bt.n; i++) {
+    BatteryRow *r = &bt.rows[i];
+    printf("  %-18s cap=%-4d level=%-8s scope='%s' status='%s'\n", r->name, r->capacity,
+           r->level_word, r->scope, r->status);
+    printf("                   tech='%s' vendor='%s' model='%s' cycles=%d\n", r->technology,
+           r->manufacturer, r->model, r->cycles);
+    printf("                   now=%lld full=%lld design=%lld cur=%lld volt=%lld uah/uv\n",
+           r->now_uah, r->full_uah, r->design_uah, r->current_ua, r->voltage_uv);
+  }
+
   return 0;
 }

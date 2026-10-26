@@ -231,6 +231,50 @@ typedef struct {
 
 void stats_collect_info(SysInfo *i);
 
+/* ---------- batteries ---------- */
+
+/* Every power supply the kernel publishes under /sys/class/power_supply. The
+   machine's own battery and a Bluetooth mouse arrive through the same door, so
+   they are kept in one list and separated by `scope`: a supply with no scope
+   file belongs to the machine, one that says "Device" is a peripheral.
+   `serial_number` is deliberately never opened — it identifies the unit, not
+   the battery, and no row on this tab needs it.
+   A supply can answer some fields and not others, which is why the numeric
+   ones are -1 rather than 0 when unsaid: 0 % and "no number" are different
+   answers, and a battery that is genuinely empty must not look like a driver
+   that says nothing. */
+#define MAXBATT 8
+
+typedef struct {
+  char name[48];        /* the sysfs directory: BAT1, hidpp_battery_0 */
+  char model[96];       /* model_name, empty when the driver states none */
+  char manufacturer[64];
+  char technology[24];  /* Li-ion, LiPo … */
+  char status[24];      /* Charging, Discharging, Full, Not charging … */
+  char level_word[24];  /* capacity_level: Full, Normal, Low, Critical … */
+  char scope[24];       /* "" for the machine's own, "Device" for a peripheral */
+  int capacity;         /* 0..100, -1 when the kernel gives no number */
+  long long now_uah;    /* charge_now, or energy_now where only that exists */
+  long long full_uah;   /* charge_full, or energy_full */
+  long long design_uah; /* charge_full_design, or energy_full_design */
+  long long current_ua; /* signed; 0 or unsaid means no rate to divide by */
+  long long voltage_uv;
+  int cycles; /* -1 unsaid */
+  int is_battery;
+  int online; /* Mains: the adapter is plugged in */
+} BatteryRow;
+
+typedef struct {
+  BatteryRow rows[MAXBATT];
+  int n;
+  int external;   /* some supply says it is feeding the machine */
+  int overflow;   /* more supplies than MAXBATT, so the rows below are short */
+} BatteryTable;
+
+/* Re-reads the whole directory. One small file per field of one supply, so a
+   machine with a battery and two peripherals costs a few dozen reads. */
+void stats_scan_batteries(BatteryTable *t);
+
 void stats_init(SysStats *s);
 void stats_sample(SysStats *s);
 void stats_sample_procs(ProcTable *t, int with_details);

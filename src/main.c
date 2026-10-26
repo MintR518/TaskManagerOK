@@ -70,13 +70,14 @@ static void init_i18n(void) {
     radix_char = (char)cr[0];
 }
 
-#define NDEV 6
+#define NDEV 7
 #define DEV_CPU 0
 #define DEV_MEM 1
 #define DEV_DISK 2
 #define DEV_NET 3
 #define DEV_GPU 4
 #define DEV_TEMP 5
+#define DEV_BATT 6
 
 #define HIST 3600
 #define WINLEN 60
@@ -97,9 +98,11 @@ static void init_i18n(void) {
 
 /* The rail icon index is also the tab id: the first icon opens the process list,
    the second is Performance, the third Startup, the fourth Details and the fifth
-   the machine information. Only the two process tabs have work that repeats; the
-   autostart list is a directory scan and the information is a set of files read
-   once, so both are re-collected when the tab opens (see set_tab). */
+   the machine information. Only the two process tabs have work that repeats on a
+   timer; the autostart list is a directory scan and the information is a set of
+   files read once, so both are re-collected when the tab opens (see set_tab).
+   The batteries live inside Performance as one of its devices, so they are
+   resampled when that device is the selected one. */
 enum { TAB_PROC, TAB_PERF, TAB_STARTUP, TAB_DETAILS, TAB_INFO };
 
 enum { U_PCT, U_RATE, U_TEMP };
@@ -112,12 +115,13 @@ static double chist[MAXCORE][HIST];
 static int chn;
 
 static const char *dev_name[NDEV] = {N_("CPU"), N_("Memory"), N_("Disk"), N_("Network"),
-                                     N_("GPU"), N_("Temperature")};
-static const char *dev_key[NDEV] = {"cpu", "mem", "disk", "net", "gpu", "temp"};
-static const int dev_unit[NDEV] = {U_PCT, U_PCT, U_RATE, U_RATE, U_PCT, U_TEMP};
+                                     N_("GPU"), N_("Temperature"), N_("Battery")};
+static const char *dev_key[NDEV] = {"cpu", "mem", "disk", "net", "gpu", "temp", "batt"};
+static const int dev_unit[NDEV] = {U_PCT, U_PCT, U_RATE, U_RATE, U_PCT, U_TEMP, U_PCT};
 
 static int nvisible;
 static int row_to_dev[NDEV];
+static int batt_row_at = -1; /* the Battery row's index in the list, -1 while absent */
 
 static GtkWidget *window, *dev_list, *dev_sep, *graph_area, *cores_area, *page_title, *page_sub, *note_label;
 static GtkWidget *rail, *head_sub, *perf_card, *proc_card, *proc_tree, *proc_scroll, *proc_note;
@@ -137,8 +141,8 @@ static double hover_px = -1;
 
 /* The header under the window title says which tab is open. Indexing this by the
    tab id is what the four-deep ternary in set_tab had become. */
-static const char *tab_head[5] = {N_("Processes"), N_("Performance"), N_("Startup"), N_("Details"),
-                                  N_("Information")};
+static const char *tab_head[RAIL_ICONS] = {N_("Processes"), N_("Performance"), N_("Startup"),
+                                           N_("Details"),   N_("Information")};
 
 static const double accent[3] = {0.30, 0.76, 1.00};
 
@@ -554,6 +558,8 @@ static gboolean on_leave(GtkWidget *w, GdkEventCrossing *e, gpointer data) {
 
 static void update_panel(void);
 static void set_stats(int n, const char *const *vals, const char *const *labs);
+static void show_battery_device(void);
+static void sync_batt_row(void);
 
 /* Each column shows a formatted string and keeps the raw number beside it, so
    sorting works on values rather than on text like "1,5 ГБ". */
@@ -1710,6 +1716,338 @@ static void on_info_row_selected(GtkListBox *box, GtkListBoxRow *row, gpointer u
   sync_info_rows();
 }
 
+/* ---------- battery device ---------- */
+
+/* A battery is not a signal, so this device has no curve. Charge moves by one per
+   cent every few minutes on a machine this age: a 60-second window of it is a
+   straight line, and a longer one is a story about last night rather than about
+   now. What carries the information instead is a bar of the level itself, which
+   is the one number a person reads off a battery page. */
+
+/* A supply that has not been touched since the device was picked still answers a
+   read, so five seconds is often enough to notice a device joining or a level
+   moving, and the scan itself costs about a millisecond. */
+#define BATT_EVERY 5
+
+static BatteryTable batt;
+static GtkWidget *batt_scroll, *batt_box;
+static int batt_countdown;
+static char batt_sig[1024];
+
+/* The kernel writes the word "Unknown" into fields its driver does not fill,
+   which is the same answer as a file that is not there at all: this machine
+   cannot tell us. Both come back as NULL so the caller leaves the item out
+   instead of printing the word. */
+static const char *said(const char *s) {
+  return s && s[0] && g_ascii_strcasecmp(s, "Unknown") != 0 ? s : NULL;
+}
+
+/* Percentage of the design capacity a full charge still holds. Two firmware
+   numbers are needed for it, and a cell that reports no wear is a cell whose
+   firmware never re-measured it — that is not the same as a new one. */
+static int batt_wear(const BatteryRow *r) {
+  if (r->full_uah <= 0 || r->design_uah <= 0)
+    return -1;
+  double w = 100.0 * (1.0 - (double)r->full_uah / (double)r->design_uah);
+  if (w < 0)
+    w = 0;
+  if (w > 100)
+    w = 100;
+  return (int)(w + 0.5);
+}
+
+/* Seconds of charge left, or of charging left, from the rate the driver is
+   reporting right now. A driver that answers 0 µA — which is what a full cell
+   on the charger says — gives no rate to divide by, and the honest outcome is no
+   figure at all rather than an infinite one. */
+static double batt_eta_s(const BatteryRow *r) {
+  if (r->now_uah < 0 || r->current_ua == 0 || r->current_ua < -1000000 ||
+      r->current_ua > 1000000)
+    return -1;
+  double rate = r->current_ua < 0 ? -(double)r->current_ua : (double)r->current_ua;
+  if (rate <= 0)
+    return -1;
+  double left = -1;
+  if (r->current_ua < 0)
+    left = (double)r->now_uah;
+  else if (r->full_uah > 0 && r->full_uah > r->now_uah)
+    left = (double)(r->full_uah - r->now_uah);
+  if (left < 0)
+    return -1;
+  return left / rate * 3600.0;
+}
+
+static const char *batt_status_word(const BatteryRow *r, int external) {
+  const char *s = said(r->status);
+  if (!s)
+    return NULL;
+  if (!strcmp(s, "Charging"))
+    return _("Charging");
+  if (!strcmp(s, "Discharging"))
+    return _("Discharging");
+  if (!strcmp(s, "Full"))
+    return _("Fully charged");
+  if (!strcmp(s, "Not charging"))
+    return external ? _("Plugged in, holding") : _("Not charging");
+  if (!strcmp(s, "Empty"))
+    return _("Empty");
+  return s; /* a driver word no kernel documented: show what it said */
+}
+
+static int batt_is_device(const BatteryRow *r) {
+  const char *s = said(r->scope);
+  return s && !g_ascii_strcasecmp(s, "Device");
+}
+
+static void round_rect(cairo_t *cr, double x, double y, double w, double h, double rad) {
+  double r = h / 2.0 < rad ? h / 2.0 : rad;
+  cairo_new_sub_path(cr);
+  cairo_arc(cr, x + w - r, y + r, r, -M_PI / 2, 0);
+  cairo_arc(cr, x + w - r, y + h - r, r, 0, M_PI / 2);
+  cairo_arc(cr, x + r, y + h - r, r, M_PI / 2, M_PI);
+  cairo_arc(cr, x + r, y + r, r, M_PI, 3 * M_PI / 2);
+  cairo_close_path(cr);
+}
+
+/* The track is drawn even at 100 % and at 0 %: a bar that fills its own outline
+   reads as a full battery, an empty one as a dead one, and both are the answer
+   the reader came for. */
+static gboolean on_draw_batt_bar(GtkWidget *w, cairo_t *cr, gpointer u) {
+  int pct = GPOINTER_TO_INT(u);
+  GtkAllocation a;
+  gtk_widget_get_allocation(w, &a);
+  double h = 10, y = (a.height - h) / 2.0;
+  cairo_set_source_rgb(cr, 0.184, 0.184, 0.184);
+  round_rect(cr, 0, y, a.width, h, 5);
+  cairo_fill(cr);
+  double f = pct / 100.0 * (a.width - 2) + 2;
+  cairo_set_source_rgb(cr, accent[0], accent[1], accent[2]);
+  round_rect(cr, 1, y, f - 1, h, 5);
+  cairo_fill(cr);
+  return TRUE;
+}
+
+static GtkWidget *batt_label(const char *text, const char *style_class) {
+  GtkWidget *l = gtk_label_new(text);
+  gtk_widget_set_halign(l, GTK_ALIGN_START);
+  if (style_class)
+    gtk_style_context_add_class(gtk_widget_get_style_context(l), style_class);
+  return l;
+}
+
+/* One supply as a block: what it is, how full it is, and the numbers that say
+   how much life is left in it. Every line is built from the fields this machine
+   actually answered, so a mouse that reports nothing but its name gets its name
+   and a sentence about the level it does not report — never a row of dashes. */
+static void batt_add_block(const BatteryRow *r) {
+  char title[256] = "";
+  const char *model = said(r->model), *vendor = said(r->manufacturer);
+  /* The section header already says what kind of row this is, so the title is
+     only what identifies this one of them. A peripheral's kernel name —
+     hidpp_battery_0 — identifies the driver instance, not the mouse, so only the
+     machine's own slots are labelled by it. */
+  if (model && vendor && !batt_is_device(r))
+    FMT(title, sizeof title, "%s (%s)", model, r->name);
+  else if (model)
+    snprintf(title, sizeof title, "%s", model);
+  else if (vendor && !batt_is_device(r))
+    FMT(title, sizeof title, "%s (%s)", vendor, r->name);
+  else if (vendor)
+    snprintf(title, sizeof title, "%s", vendor);
+  else
+    snprintf(title, sizeof title, "%s", r->name);
+
+  GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+  gtk_widget_set_margin_start(v, 10);
+  gtk_widget_set_margin_end(v, 10);
+  gtk_widget_set_margin_top(v, 8);
+  gtk_widget_set_margin_bottom(v, 8);
+
+  GtkWidget *head = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+  const char *status = batt_status_word(r, batt.external);
+  gtk_box_pack_start(GTK_BOX(head), batt_label(title, "statv"), TRUE, TRUE, 0);
+  if (status)
+    gtk_box_pack_end(GTK_BOX(head), batt_label(status, "page_sub"), FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(v), head, FALSE, FALSE, 0);
+
+  char pct[32] = "";
+  if (r->capacity >= 0)
+    FMT(pct, sizeof pct, _("%d %%"), r->capacity);
+
+  GtkWidget *bar_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+  if (r->capacity >= 0) {
+    GtkWidget *bar = gtk_drawing_area_new();
+    gtk_widget_set_size_request(bar, -1, 14);
+    gtk_widget_set_hexpand(bar, TRUE);
+    g_signal_connect(bar, "draw", G_CALLBACK(on_draw_batt_bar), GINT_TO_POINTER(r->capacity));
+    gtk_box_pack_start(GTK_BOX(bar_row), bar, TRUE, TRUE, 0);
+    gtk_box_pack_end(GTK_BOX(bar_row), batt_label(pct, "statv"), FALSE, FALSE, 0);
+  } else {
+    gtk_box_pack_start(GTK_BOX(bar_row),
+                       batt_label(_("No level is reported for this battery"), "note"),
+                       FALSE, FALSE, 0);
+  }
+  gtk_box_pack_start(GTK_BOX(v), bar_row, FALSE, FALSE, 0);
+
+  /* The facts that describe the cell rather than its charge right now. */
+  char detail[512] = "";
+#define ADD_PART(...)                                                     \
+  do {                                                                    \
+    char ap_[192];                                                        \
+    FMT(ap_, sizeof ap_, __VA_ARGS__);                                    \
+    char aj_[512];                                                        \
+    FMT(aj_, sizeof aj_, "%s%s%s", detail, detail[0] ? "  ·  " : "", ap_); \
+    snprintf(detail, sizeof detail, "%s", aj_);                           \
+  } while (0)
+  long long cap = r->full_uah > 0 ? r->full_uah : r->design_uah;
+  if (model && vendor)
+    ADD_PART("%s", vendor); /* the title carries the model, so the maker goes here */
+  if (cap > 0)
+    ADD_PART(_("%lld mAh"), cap / 1000);
+  int wear = batt_wear(r);
+  if (wear >= 0)
+    ADD_PART(_("wear %d %%"), wear);
+  if (r->cycles >= 0)
+    ADD_PART(_("cycles: %d"), r->cycles);
+  const char *tech = said(r->technology);
+  if (tech)
+    ADD_PART("%s", tech);
+  double eta = batt_eta_s(r);
+  if (eta >= 0) {
+    char es[64];
+    fmt_elapsed(eta, es, sizeof es);
+    ADD_PART("%s", es);
+  }
+#undef ADD_PART
+  if (detail[0])
+    gtk_box_pack_start(GTK_BOX(v), batt_label(detail, "note"), FALSE, FALSE, 0);
+
+  gtk_box_pack_start(GTK_BOX(batt_box), v, FALSE, FALSE, 0);
+}
+
+static void batt_add_section(const char *name) {
+  GtkWidget *l = batt_label(name, "page_sub");
+  gtk_widget_set_margin_start(l, 10);
+  gtk_widget_set_margin_top(l, 10);
+  gtk_box_pack_start(GTK_BOX(batt_box), l, FALSE, FALSE, 0);
+}
+
+/* The blocks are rebuilt when the numbers change and left alone when they do
+   not, which on a laptop sitting on a charger is every few minutes at most. */
+static void batt_rebuild(void) {
+  if (!batt_box)
+    return;
+  char sig[1024] = "";
+  for (int i = 0; i < batt.n; i++) {
+    const BatteryRow *r = &batt.rows[i];
+    char line[256];
+    FMT(line, sizeof line, "%s|%d|%s|%s|%lld|%d|", r->name, r->capacity, r->status,
+        r->level_word, r->full_uah, r->cycles);
+    char joined[1024];
+    FMT(joined, sizeof joined, "%s%s", sig, line);
+    snprintf(sig, sizeof sig, "%s", joined);
+  }
+  if (batt.external)
+    strncat(sig, "+", sizeof sig - strlen(sig) - 1);
+  if (!strcmp(sig, batt_sig))
+    return;
+  snprintf(batt_sig, sizeof batt_sig, "%s", sig);
+
+  GList *kids = gtk_container_get_children(GTK_CONTAINER(batt_box));
+  for (GList *c = kids; c; c = c->next)
+    gtk_widget_destroy(GTK_WIDGET(c->data));
+  g_list_free(kids);
+
+  int devs = 0;
+  for (int i = 0; i < batt.n; i++)
+    if (batt_is_device(&batt.rows[i]))
+      devs++;
+  int own = batt.n - devs;
+
+  /* The machine's own cells first even though the scan sorts by name: the one
+     that dies when the plug comes out is the one a person looks for. */
+  for (int pass = 0; pass < 2; pass++) {
+    int want_dev = pass == 1;
+    int shown = 0;
+    for (int i = 0; i < batt.n; i++)
+      if (batt_is_device(&batt.rows[i]) == want_dev)
+        shown++;
+    if (!shown)
+      continue;
+    if (devs && own)
+      batt_add_section(want_dev ? _("Devices") : _("Batteries"));
+    for (int i = 0; i < batt.n; i++)
+      if (batt_is_device(&batt.rows[i]) == want_dev)
+        batt_add_block(&batt.rows[i]);
+  }
+  gtk_widget_show_all(batt_box);
+}
+
+/* The Battery device of the Performance tab. It replaces the graph rather than
+   sitting under it: there is no curve to draw (see the note above BATT_EVERY),
+   and the blocks are the only thing here worth the space. */
+static void show_battery_device(void) {
+  gtk_widget_set_visible(graph_area, FALSE);
+  gtk_widget_set_visible(cores_area, FALSE);
+  gtk_widget_set_visible(sens_scroll, FALSE);
+  gtk_widget_set_visible(note_label, FALSE);
+  gtk_widget_set_visible(batt_scroll, TRUE);
+
+  int own = -1;
+  for (int i = 0; i < batt.n; i++)
+    if (!batt_is_device(&batt.rows[i])) {
+      own = i;
+      break;
+    }
+
+  char sub[256] = "";
+  if (own >= 0) {
+    const BatteryRow *r = &batt.rows[own];
+    const char *vendor = said(r->manufacturer), *model = said(r->model);
+    if (vendor && model)
+      FMT(sub, sizeof sub, "%s  ·  %s  ·  %s", r->name, vendor, model);
+    else if (vendor)
+      FMT(sub, sizeof sub, "%s  ·  %s", r->name, vendor);
+    else
+      snprintf(sub, sizeof sub, "%s", r->name);
+  } else if (batt.n)
+    snprintf(sub, sizeof sub, "%s", _("Peripherals only"));
+  gtk_label_set_text(GTK_LABEL(page_sub), sub);
+
+  const char *vals[NST], *labs[NST];
+  static char vbuf[NST][64];
+  int n = 0;
+#define ADD_STAT(label, ...)                              \
+  do {                                                    \
+    if (n < NST) {                                        \
+      FMT(vbuf[n], sizeof vbuf[n], __VA_ARGS__);          \
+      labs[n] = (label);                                  \
+      vals[n] = vbuf[n];                                  \
+      n++;                                                \
+    }                                                     \
+  } while (0)
+  if (own >= 0) {
+    const BatteryRow *r = &batt.rows[own];
+    const char *sw = batt_status_word(r, batt.external);
+    if (r->capacity >= 0)
+      ADD_STAT(_("Level"), "%d %%", r->capacity);
+    if (sw)
+      ADD_STAT(_("State"), "%s", sw);
+    double eta = batt_eta_s(r);
+    if (eta >= 0) {
+      char es[64];
+      fmt_elapsed(eta, es, sizeof es);
+      ADD_STAT(r->current_ua < 0 ? _("Time left") : _("Time to full"), "%s", es);
+    }
+    int wear = batt_wear(r);
+    if (wear >= 0)
+      ADD_STAT(_("Health"), "%d %%", 100 - wear);
+  }
+#undef ADD_STAT
+  set_stats(n, vals, labs);
+  batt_rebuild();
+}
+
 /* The line under each process table is where the outcome of an action is
    reported, so the explanation it carries by default has to be reachable again.
    It goes back when the tab is opened, the way the Startup tab's note does. */
@@ -1726,11 +2064,11 @@ static void set_tab(int t) {
   gboolean perf = (t == TAB_PERF);
   /* One child of the stack is on screen at a time, which is what these five
      cards always meant to be. */
-  static const char *const tab_card[5] = {"proc", "perf", "start", "det", "info"};
+  static const char *const tab_card[RAIL_ICONS] = {"proc", "perf", "start", "det", "info"};
   gtk_stack_set_visible_child_name(GTK_STACK(card_stack), tab_card[t]);
   /* The device list belongs to the Performance tab and the section list to the
      Information tab; on the other three either would only take the width the
-     table needs. */
+     table or the blocks need. */
   gtk_widget_set_visible(dev_list, perf);
   gtk_widget_set_visible(dev_sep, perf);
   gtk_widget_set_visible(info_list, t == TAB_INFO);
@@ -1844,6 +2182,10 @@ static void update_panel(void) {
     return;
   }
   gtk_label_set_text(GTK_LABEL(page_title), _(dev_name[sel]));
+  if (sel == DEV_BATT) {
+    show_battery_device();
+    return;
+  }
 
   char sub[256] = "";
   switch (sel) {
@@ -1900,6 +2242,7 @@ static void update_panel(void) {
   gtk_widget_set_visible(cores_area, has_graph && sel == DEV_CPU && st.ncore > 0);
   gtk_widget_set_visible(sens_scroll, has_graph && sel == DEV_TEMP);
   gtk_widget_set_visible(note_label, !has_graph);
+  gtk_widget_set_visible(batt_scroll, FALSE);
   if (!has_graph)
     gtk_label_set_text(GTK_LABEL(note_label),
                        _("This driver does not report GPU utilisation"));
@@ -2045,6 +2388,14 @@ static void on_row_selected(GtkListBox *b, GtkListBoxRow *row, gpointer data) {
     return;
   sel = row_to_dev[idx];
   hover_px = -1;
+  if (sel == DEV_BATT) {
+    /* Unlike the information files, a battery moves while the window is open, so
+       this device keeps being read — every fifth second, which is far more often
+       than a percentage changes and costs about a millisecond each time. Picking
+       the row reads it first, so the blocks are never a stale frame. */
+    stats_scan_batteries(&batt);
+    batt_countdown = BATT_EVERY;
+  }
   update_panel();
 }
 
@@ -2395,6 +2746,10 @@ static gboolean on_tick(gpointer data) {
     det_countdown = DET_EVERY;
     stats_sample_procs(&pt, 1);
     sync_det_rows();
+  } else if (tab == TAB_PERF && sel == DEV_BATT && --batt_countdown <= 0) {
+    batt_countdown = BATT_EVERY;
+    stats_scan_batteries(&batt);
+    sync_batt_row();
   }
 
   update_panel();
@@ -2536,7 +2891,7 @@ static void draw_dev_icon(cairo_t *cr, int dev, int wifi) {
       cairo_move_to(cr, 5.2, 13.6);
       cairo_line_to(cr, 10.8, 13.6);
       break;
-    default: /* a thermometer: bulb, stem, mercury, one scale tick */
+    case DEV_TEMP: /* a thermometer: bulb, stem, mercury, one scale tick */
       cairo_arc(cr, 8, 11.3, 2.9, 0, 2 * M_PI);
       cairo_new_sub_path(cr);
       cairo_move_to(cr, 6.7, 9.1);
@@ -2553,6 +2908,14 @@ static void draw_dev_icon(cairo_t *cr, int dev, int wifi) {
       cairo_move_to(cr, 10.6, 5.2);
       cairo_line_to(cr, 12.3, 5.2);
       break;
+    default: /* a cell lying on its side: body, nub, and the plate inside it */
+      round_rect(cr, 2.6, 5.2, 9.6, 5.6, 1.6);
+      cairo_new_sub_path(cr);
+      cairo_move_to(cr, 13.4, 6.6);
+      cairo_line_to(cr, 13.4, 9.4);
+      cairo_new_sub_path(cr);
+      cairo_rectangle(cr, 5.0, 6.8, 4.6, 2.4);
+      break;
   }
 }
 
@@ -2568,6 +2931,35 @@ static gboolean on_draw_dev_icon(GtkWidget *w, cairo_t *cr, gpointer data) {
   draw_dev_icon(cr, dev, wifi);
   cairo_stroke(cr);
   return FALSE;
+}
+
+/* One row of the list: the glyph and the label, both written from the snapshot
+   that was current when the row was built. */
+static void add_dev_row(int d, int wifi) {
+  char b[160];
+  if (d == DEV_DISK)
+    snprintf(b, sizeof b, "%s (%s)", _(dev_name[d]), st.disk_name);
+  else if (d == DEV_NET)
+    snprintf(b, sizeof b, "%s (%s)", _(dev_name[d]), st.net_if);
+  else
+    snprintf(b, sizeof b, "%s", _(dev_name[d]));
+  GtkWidget *l = gtk_label_new(b);
+  gtk_widget_set_halign(l, GTK_ALIGN_START);
+  GtkWidget *ic = gtk_drawing_area_new();
+  gtk_widget_set_size_request(ic, 16, 16);
+  gtk_widget_set_valign(ic, GTK_ALIGN_CENTER);
+  g_object_set_data(G_OBJECT(ic), "dev", GINT_TO_POINTER(d));
+  g_object_set_data(G_OBJECT(ic), "wifi", GINT_TO_POINTER(wifi));
+  g_signal_connect(ic, "draw", G_CALLBACK(on_draw_dev_icon), NULL);
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+  gtk_box_pack_start(GTK_BOX(box), ic, FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(box), l, FALSE, FALSE, 0);
+  GtkWidget *row = gtk_list_box_row_new();
+  gtk_container_add(GTK_CONTAINER(row), box);
+  gtk_list_box_insert(GTK_LIST_BOX(dev_list), row, -1);
+  row_to_dev[nvisible++] = d;
+  if (d == DEV_BATT)
+    batt_row_at = nvisible - 1;
 }
 
 static void build_device_list(void) {
@@ -2590,33 +2982,40 @@ static void build_device_list(void) {
       show = st.gpu_present;
     else if (d == DEV_TEMP)
       show = st.nsens > 0; /* no sensor readable, no row: a blank line would be the bug */
+    else if (d == DEV_BATT)
+      show = batt.n > 0; /* the same rule: a machine with no supply gets no page for one */
     else
       show = TRUE;
     if (!show)
       continue;
-    char b[160];
-    if (d == DEV_DISK)
-      snprintf(b, sizeof b, "%s (%s)", _(dev_name[d]), st.disk_name);
-    else if (d == DEV_NET)
-      snprintf(b, sizeof b, "%s (%s)", _(dev_name[d]), st.net_if);
-    else
-      snprintf(b, sizeof b, "%s", _(dev_name[d]));
-    GtkWidget *l = gtk_label_new(b);
-    gtk_widget_set_halign(l, GTK_ALIGN_START);
-    GtkWidget *ic = gtk_drawing_area_new();
-    gtk_widget_set_size_request(ic, 16, 16);
-    gtk_widget_set_valign(ic, GTK_ALIGN_CENTER);
-    g_object_set_data(G_OBJECT(ic), "dev", GINT_TO_POINTER(d));
-    g_object_set_data(G_OBJECT(ic), "wifi", GINT_TO_POINTER(wifi));
-    g_signal_connect(ic, "draw", G_CALLBACK(on_draw_dev_icon), NULL);
-    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    gtk_box_pack_start(GTK_BOX(box), ic, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(box), l, FALSE, FALSE, 0);
-    GtkWidget *row = gtk_list_box_row_new();
-    gtk_container_add(GTK_CONTAINER(row), box);
-    gtk_list_box_insert(GTK_LIST_BOX(dev_list), row, -1);
-    row_to_dev[nvisible++] = d;
+    add_dev_row(d, wifi);
   }
+}
+
+/* A wireless mouse can be switched off while the window is open, and a row that
+   then leads to a page about nothing is the bug the temperature list already
+   avoids. The battery is the only device whose presence can arrive or leave
+   mid-session, so it is the only one this has to follow — and it is the last
+   row, so both directions are an append or a remove, never a renumber. */
+static void sync_batt_row(void) {
+  gboolean want = batt.n > 0;
+  if (want == (batt_row_at >= 0))
+    return;
+  if (want) {
+    add_dev_row(DEV_BATT, 0);
+    return;
+  }
+  GtkListBoxRow *row = gtk_list_box_get_row_at_index(GTK_LIST_BOX(dev_list), batt_row_at);
+  gboolean was_sel = sel == DEV_BATT;
+  batt_row_at = -1;
+  if (was_sel)
+    /* Moving the selection first: the panel cannot be left showing a device
+       whose row has just gone. */
+    gtk_list_box_select_row(GTK_LIST_BOX(dev_list),
+                            gtk_list_box_get_row_at_index(GTK_LIST_BOX(dev_list), 0));
+  if (row)
+    gtk_widget_destroy(GTK_WIDGET(row));
+  nvisible--;
 }
 
 int main(int argc, char **argv) {
@@ -2669,6 +3068,9 @@ int main(int argc, char **argv) {
   gtk_widget_set_size_request(dev_list, 196, -1);
   g_signal_connect(dev_list, "row-selected", G_CALLBACK(on_row_selected), NULL);
   gtk_box_pack_start(GTK_BOX(body), dev_list, FALSE, FALSE, 0);
+  /* The list has to know whether there is a battery at all before it is built;
+     this is the one read that is not driven by a selection. */
+  stats_scan_batteries(&batt);
   build_device_list();
 
   dev_sep = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
@@ -3027,6 +3429,24 @@ int main(int argc, char **argv) {
       gtk_tree_view_column_set_expand(c, TRUE);
     gtk_tree_view_append_column(GTK_TREE_VIEW(info_tree), c);
   }
+
+  /* The Battery device shows a stack of blocks rather than a table, because a
+     supply answers a different set of questions from its neighbour: one has a
+     wear figure, one has only a name. It lives inside the Performance card and
+     takes the graph's place when its row is selected. */
+  batt_scroll = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(batt_scroll), GTK_POLICY_NEVER,
+                                 GTK_POLICY_AUTOMATIC);
+  gtk_style_context_add_class(gtk_widget_get_style_context(batt_scroll), "sens");
+  gtk_widget_set_margin_start(batt_scroll, 8);
+  gtk_widget_set_margin_end(batt_scroll, 8);
+  gtk_widget_set_margin_top(batt_scroll, 4);
+  gtk_widget_set_margin_bottom(batt_scroll, 6);
+  gtk_box_pack_start(GTK_BOX(perf_card), batt_scroll, TRUE, TRUE, 0);
+
+  batt_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+  gtk_style_context_add_class(gtk_widget_get_style_context(batt_box), "sens");
+  gtk_container_add(GTK_CONTAINER(batt_scroll), batt_box);
 
   GtkWidget *strip = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
   gtk_widget_set_margin_top(strip, 8);

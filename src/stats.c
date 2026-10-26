@@ -2091,3 +2091,158 @@ void stats_collect_info(SysInfo *i) {
   info_disks(i);
   info_filesystems(i);
 }
+
+/* ---------- batteries ---------- */
+
+/* A discharge current is signed on the drivers that report one at all, so the
+   unsigned reader used elsewhere would turn -35000 into 18446744073715117616. */
+static int read_ll(const char *path, long long *out) {
+  FILE *f = fopen(path, "r");
+  if (!f)
+    return 0;
+  char buf[64];
+  int ok = 0;
+  if (fgets(buf, sizeof buf, f)) {
+    char *end;
+    long long v = strtoll(buf, &end, 10);
+    if (end != buf) {
+      *out = v;
+      ok = 1;
+    }
+  }
+  fclose(f);
+  return ok;
+}
+
+static void batt_text(char *dst, size_t dn, const char *dir, const char *field) {
+  char p[192];
+  snprintf(p, sizeof p, "%s/%s", dir, field);
+  char buf[192];
+  if (!read_line(p, buf, sizeof buf))
+    return;
+  scpy(dst, dn, trim(buf));
+}
+
+static void batt_num(long long *dst, const char *dir, const char *field) {
+  char p[192];
+  snprintf(p, sizeof p, "%s/%s", dir, field);
+  long long v;
+  if (read_ll(p, &v))
+    *dst = v;
+}
+
+/* One supply directory as far as it answers. Anything a driver leaves out stays
+   unsaid here rather than being guessed at, because the tab decides what to show
+   by asking whether the field has a value. */
+static void batt_read(BatteryRow *r, const char *dir) {
+  const char *base = strrchr(dir, '/');
+  scpy(r->name, sizeof r->name, base ? base + 1 : dir);
+
+  char type[24] = "";
+  batt_text(type, sizeof type, dir, "type");
+  r->is_battery = !strcmp(type, "Battery");
+
+  /* A Mains supply is not a row — it is a battery that cannot be unplugged —
+     but whether it is online is what turns "4 h left" into "charging". */
+  if (!r->is_battery) {
+    unsigned long long v;
+    char p[192];
+    snprintf(p, sizeof p, "%s/online", dir);
+    if (!strcmp(type, "Mains") && read_u64(p, &v))
+      r->online = v != 0;
+    return;
+  }
+
+  batt_text(r->model, sizeof r->model, dir, "model_name");
+  batt_text(r->manufacturer, sizeof r->manufacturer, dir, "manufacturer");
+  batt_text(r->technology, sizeof r->technology, dir, "technology");
+  batt_text(r->status, sizeof r->status, dir, "status");
+  batt_text(r->level_word, sizeof r->level_word, dir, "capacity_level");
+  batt_text(r->scope, sizeof r->scope, dir, "scope");
+
+  /* -1 means the file is missing, which is not the same answer as a cell that
+     really is at 0 %. */
+  r->capacity = -1;
+  long long v = -1;
+  batt_num(&v, dir, "capacity");
+  if (v >= 0 && v <= 100)
+    r->capacity = (int)v;
+
+  /* Charge is in microamp-hours, energy in microwatt-hours; a driver supplies
+     one family or the other, and the two are not mixed within one supply. */
+  r->now_uah = r->full_uah = r->design_uah = r->current_ua = r->voltage_uv = -1;
+  batt_num(&r->now_uah, dir, "charge_now");
+  if (r->now_uah < 0)
+    batt_num(&r->now_uah, dir, "energy_now");
+  batt_num(&r->full_uah, dir, "charge_full");
+  if (r->full_uah < 0)
+    batt_num(&r->full_uah, dir, "energy_full");
+  batt_num(&r->design_uah, dir, "charge_full_design");
+  if (r->design_uah < 0)
+    batt_num(&r->design_uah, dir, "energy_full_design");
+  batt_num(&r->current_ua, dir, "current_now");
+  batt_num(&r->voltage_uv, dir, "voltage_now");
+
+  /* A cycle count of 0 is a real answer — a new cell — so the field is only
+     left unsaid when the file itself is missing. */
+  r->cycles = -1;
+  long long c = -1;
+  batt_num(&c, dir, "cycle_count");
+  if (c >= 0)
+    r->cycles = (int)c;
+
+  /* `present` is optional; a supply that states it and says no is a slot with
+     nothing in it, and a row for it would be a lie about hardware. */
+  unsigned long long p0;
+  char pp[192];
+  snprintf(pp, sizeof pp, "%s/present", dir);
+  if (read_u64(pp, &p0) && p0 == 0)
+    r->is_battery = 0;
+}
+
+void stats_scan_batteries(BatteryTable *t) {
+  memset(t, 0, sizeof *t);
+  DIR *d = opendir("/sys/class/power_supply");
+  if (!d)
+    return;
+
+  /* readdir hands out directory order, which is registration order: a mouse
+     that re-pairs moves to the end of the list and would jump rows. */
+  char names[MAXBATT + 1][48];
+  int found = 0;
+  struct dirent *e;
+  while ((e = readdir(d))) {
+    if (e->d_name[0] == '.')
+      continue;
+    if (found > MAXBATT) {
+      t->overflow = 1;
+      break;
+    }
+    int at = found;
+    while (at > 0 && strcmp(names[at - 1], e->d_name) > 0) {
+      memcpy(names[at], names[at - 1], sizeof names[0]);
+      at--;
+    }
+    scpy(names[at], sizeof names[0], e->d_name);
+    found++;
+  }
+  closedir(d);
+  if (found > MAXBATT) {
+    t->overflow = 1;
+    found = MAXBATT;
+  }
+
+  for (int i = 0; i < found; i++) {
+    char dir[128];
+    scpy(dir, sizeof dir, "/sys/class/power_supply/");
+    scpy(dir + strlen(dir), sizeof dir - strlen(dir), names[i]);
+    BatteryRow r;
+    memset(&r, 0, sizeof r);
+    batt_read(&r, dir);
+    if (r.online)
+      t->external = 1;
+    if (!r.is_battery || t->n >= MAXBATT)
+      continue;
+    t->rows[t->n++] = r;
+  }
+}

@@ -10,6 +10,9 @@ column the kernel keeps about them — state, owner, lifetime CPU and byte
 counters, threads, priority, parent and command line) and the **Information**
 tab (what the machine is: distribution, processor and caches, memory modules,
 board and BIOS, display adapter and monitors, disks and the space left on them).
+Performance also carries the power supplies: its **Battery** device lists every
+one the kernel publishes — the laptop's own cells and the wireless devices beside
+them — in place of the chart.
 
 Written in plain C against GTK 3 and Cairo, with no daemons, no interpreted
 runtime and no background services. The whole program is one binary.
@@ -19,7 +22,8 @@ runtime and no background services. The whole program is one binary.
 The Performance, Processes, Startup, Details and Information tabs are
 implemented, and a process
 you own can be ended from either process table. The Performance tab covers CPU,
-memory, disk, network, GPU and, where the kernel exposes sensors, temperature.
+memory, disk, network, GPU, temperature where the kernel exposes sensors, and
+the power supplies where `/sys/class/power_supply` has anything to say.
 The Services tab is planned (see
 [Roadmap](#roadmap)). The interface follows the system language (Ukrainian and
 English at the moment) and there is a portable AppImage build.
@@ -38,6 +42,7 @@ the shipped build:
 | CPU, Details tab (6 s refresh) | 0.89 % of one core (0.400 s per 45 s) |
 | CPU, Startup tab (scanned when the tab opens) | 0.25 % of one core (0.110 s per 45 s) |
 | CPU, Information tab (read once when the tab opens) | 0.41 % of one core (0.185 s per 45 s) |
+| CPU, Performance tab with the Battery device selected (one scan every 5 s) | 0.38 % of one core (0.172 s per 45 s) |
 | CPU, machine saturated, Performance tab (2 busy loops + direct disk writes) | 0.22 % of one core |
 | CPU, pointer swept continuously over the graph, Performance tab, 125 events/s | 0.81 % of one core |
 | Startup | 0.43 s to window (best of three) |
@@ -72,7 +77,11 @@ drawing path has changed between them. The Information row is from neither: it i
 the current build in today's session, 203 processes, measured twice back to back
 — the tab open and then the Processes tab — where the two came out 0.41 % and
 0.40 % of a core, which is why it is quoted beside them rather than inside that
-older set.
+older set. The Battery row is the same build with the Battery device selected
+instead of CPU: 0.38 % against the 0.34–0.43 % the other devices cost, which is
+what it should be, since the scan it runs every fifth second measures 1.1 ms of
+CPU on its own for the two supplies this machine publishes — nine of those scans
+cost one tick of the timer.
 
 End task was checked against those figures rather than added to them, and it is
 worth saying how, because the first attempts were wrong. The machine has to be
@@ -193,6 +202,10 @@ floor.
 
 ## What each device shows
 
+Every row of the device list opens with a 16 px glyph of the device it names,
+drawn with the same Cairo strokes as the rail icons — no icon theme, no font, so
+a row cannot render as a missing-glyph box.
+
 | Device | Chart | Numbers below | Source |
 |---|---|---|---|
 | CPU | total utilisation, plus one mini chart per core | load, frequency, process count, uptime, core count | `/proc/stat`, `/proc/uptime`, `/proc/loadavg`, cpufreq sysfs |
@@ -201,6 +214,7 @@ floor.
 | Network | rx + tx throughput | rx rate, tx rate, total, link speed or Wi-Fi signal | `/sys/class/net/*`, `/proc/net/route`, `/proc/net/wireless` |
 | GPU | utilisation %, or a plain statement when the driver reports none | load, temperature, dedicated memory | `/sys/class/drm/card*/device/` — `gpu_busy_percent`, `hwmon/*/temp1_input`, `mem_info_vram_used` / `_total`; name from `label` or `pci.ids` |
 | Temperature | the hottest sensor in the machine, with a dashed line at the limit when the limit falls inside the drawn range | highest, hottest processor sensor, limit, how many sensors are readable | `/sys/class/hwmon/hwmon*/` — `name`, `tempN_input`, `tempN_label`, `tempN_crit` else `tempN_max` |
+| Battery | none, deliberately: a bar of the level itself takes the chart's place, one per supply | level, charge state, time left or time to full, remaining capacity | `/sys/class/power_supply/*` — `capacity`, `status`, `charge_now`, `current_now`, `charge_full`, `charge_full_design`, `cycle_count` |
 
 ## Temperature
 
@@ -500,9 +514,12 @@ matching is done on the trimmed name instead.
   lowest limit stated by *any* sensor, so on a machine whose hottest reading
   comes from a zone that states none it belongs to a different chip. Each row
   prints its own limit, or a dash, so the two can be told apart.
-* **The thermometer in the device list** is the `U+1F321` glyph drawn through the
-  system's font fallback. Where no installed font carries it the row opens with a
-  box; the text of the row is unaffected, and no icon font is bundled.
+* **Each device row opens with a small drawn glyph** — chip, memory module, disk,
+  network, monitor, thermometer — painted with the same Cairo strokes as the rail
+  icons. Nothing comes from an icon theme or a font, so a row cannot degrade into a
+  missing-glyph box and no desktop's icon set changes what the list looks like. The
+  network glyph is chosen by the interface the row names: a Wi-Fi antenna where
+  `/sys/class/net/<name>/wireless` exists, an Ethernet plug otherwise.
 * Device discovery is Linux-only (`/proc`, `/sys`). Nothing is hardcoded to a
   specific disk, interface or CPU: the root device is resolved from the mount
   table, the network interface from the default route.
@@ -531,6 +548,49 @@ matching is done on the trimmed name instead.
 * End task covers one process, not a tree, and only processes you own: a program
   started by another user or by root is listed and greyed with the reason, and
   raising privileges is not something this program does.
+
+## Battery
+
+The last row of the Performance device list opens the supplies the kernel
+publishes under `/sys/class/power_supply` — the laptop's own cells and, on a
+machine with a wireless mouse or keyboard, those too. It takes the chart's place
+rather than sitting under it: a battery moves by one per cent every few minutes,
+so a sixty-second window of it is a straight line and a longer one is a story
+about last night. What carries the information instead is a bar of the level
+itself.
+
+| Block | Rows | Source |
+|---|---|---|
+| The machine's own cells | name and maker, level, charge state, capacity, wear, cycles, chemistry, time left | `capacity`, `status`, `charge_full` (or `energy_full`), `charge_full_design`, `cycle_count`, `technology`, `current_now` |
+| Peripherals (`scope=Device`) | model, maker, level where the driver reports one | `model_name`, `manufacturer`, `capacity`, `capacity_level`, `status` |
+
+The rules the page is built on:
+
+* **A number that is not there is not shown.** A mouse whose driver reports only
+  `capacity_level=Unknown` gets its name and the sentence "no level is reported
+  for this battery", not a bar at zero and not a dash: 0 % and "no number" are
+  different answers, and the collector keeps them apart (`-1` in the struct).
+  The kernel's word `Unknown` is treated the same way as a missing file.
+* **The time figure appears only when there is a rate to divide by.** It is
+  `charge_now` over the current the driver is reporting this second, so a cell at
+  100 % on the charger — which answers `current_now=0` — shows no figure rather
+  than an infinite one. It is an estimate from an instantaneous sample, which is
+  what every battery gauge in the world is, but it is a rough one: a laptop that
+  spends the next minute idling and the minute after that encoding video will
+  disagree with it.
+* **Wear** is `charge_full` against `charge_full_design`, both of which the
+  firmware has to state; a cell whose firmware never re-measured the full charge
+  shows no wear row at all.
+* **`serial_number` is never opened.** It identifies the unit rather than the
+  battery, and no row on the page needs it.
+* The device rescans every fifth second while its row is selected — 1.1 ms of CPU
+  per scan on this machine, against the 5 s of wall clock between scans — because a
+  device can pair or a level can move while the window is up. The Information tab's
+  figures do not, which is why that one reads once.
+* A machine that publishes no supply — a desktop with wired input — gets no row in
+  the list at all, so there is no empty page to click into. If the last supply
+  disappears while the page is open, the row goes with it and the selection moves
+  back to the first device.
 
 ## Roadmap
 
