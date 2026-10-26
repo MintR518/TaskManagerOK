@@ -12,7 +12,9 @@ tab (what the machine is: distribution, processor and caches, memory modules,
 board and BIOS, display adapter and monitors, disks and the space left on them).
 Performance also carries the power supplies: its **Battery** device lists every
 one the kernel publishes — the laptop's own cells and the wireless devices beside
-them — in place of the chart.
+them — in place of the chart. A **gear** at the bottom of the rail opens
+**Settings**, where each of those refresh rates and the interface language are
+yours to change.
 
 Written in plain C against GTK 3 and Cairo, with no daemons, no interpreted
 runtime and no background services. The whole program is one binary.
@@ -20,13 +22,15 @@ runtime and no background services. The whole program is one binary.
 ## Status
 
 The Performance, Processes, Startup, Details and Information tabs are
-implemented, and a process
-you own can be ended from either process table. The Performance tab covers CPU,
+implemented, a process you own can be ended from either process table, and the
+refresh rates of those tabs — plus the interface language — are set in
+[Settings](#settings). The Performance tab covers CPU,
 memory, disk, network, GPU, temperature where the kernel exposes sensors, and
 the power supplies where `/sys/class/power_supply` has anything to say.
 The Services tab is planned (see
 [Roadmap](#roadmap)). The interface follows the system language (Ukrainian and
-English at the moment) and there is a portable AppImage build.
+English at the moment) unless Settings says otherwise, and there is a portable
+AppImage build.
 
 Measured on the development machine (Intel Core2 T9600, 2 threads, 3.7 GiB RAM,
 Linux Mint 22.3, XFCE/X11) with a desktop session running and 194 processes in the
@@ -58,6 +62,25 @@ the same day, one tab with the sensor table open and one without:
 | CPU, Temperature tab (1 s sampling, four sensors, machine 59.4 % busy) | 0.49 % of one core (0.222 s of CPU per 45 s) |
 | CPU, CPU tab in the same conditions (machine 60.1 % busy) | 0.43 % of one core (0.192 s per 45 s) |
 | Resident memory in the same sessions | 45.2 MiB |
+
+All five tabs, at the cadence Settings ships with, stay inside the one per cent
+of a core the program is designed not to exceed; the same page is where to see
+what a faster rate would cost (see [Settings](#settings)). The refresh cadence
+itself was chosen from those measurements rather than from what the collector
+could bear: reading the whole list costs about 6 ms of CPU per sweep
+(`/proc/<pid>/stat` for all 194 of them plus `/proc/<pid>/io` for the ones you
+own), but repainting the rows that changed costs about four times that, so the
+interval is what the redraw is worth. A sweep every 3 s measured 1.05 % of a
+core and every 5 s 0.76 %; four seconds sits under the line with room to spare.
+The Performance graph keeps its 1 s step. The Details sweep also reads the owner
+and the command line of every process — 9 ms of CPU against 6 ms for the same
+list without them, the spread of three `make test` runs at 199 rows — and it shows
+thirteen columns instead of four, so it refreshes every 6 s instead of every 4;
+nothing on that tab is a rate, so the slower step buys the budget back without
+making any number on the screen less true. The Startup tab is the cheapest of the
+four because nothing on it repaints on a timer: the directories are read once
+when the tab opens — 0.6 ms for the 33 entries on this machine — and after that
+the list only changes when something is clicked.
 
 The whole sweep was also measured on its own, by building the collector twice —
 once with the temperature pass in `stats_sample()` and once with that one call
@@ -96,23 +119,6 @@ rail icon carries the accent bar, because a window that has just opened does not
 always take the click meant to switch it. And the comparison can only have come out
 level, since nothing in end task runs on a timer: it is a menu, a dialog and two
 `kill()` calls.
-
-All five tabs stay inside the one per cent of a core the program is designed not
-to exceed. The refresh cadence was chosen from those measurements rather than
-from what the collector could bear: reading the whole list costs about 6 ms of CPU
-per sweep (`/proc/<pid>/stat` for all 194 of them plus `/proc/<pid>/io` for the
-ones you own), but repainting the rows that changed costs about four times that, so
-the interval is what the redraw is worth. A sweep every 3 s measured 1.05 % of a
-core and every 5 s 0.76 %; four seconds sits under the line with room to spare.
-The Performance graph keeps its 1 s step. The Details sweep also reads the owner
-and the command line of every process — 9 ms of CPU against 6 ms for the same
-list without them, the spread of three `make test` runs at 199 rows — and it shows
-thirteen columns instead of four, so it refreshes every 6 s instead of every 4;
-nothing on that tab is a rate, so the slower step buys the budget back without
-making any number on the screen less true. The Startup tab is the cheapest of the
-four because nothing on it repaints on a timer: the directories are read once
-when the tab opens — 0.6 ms for the 33 entries on this machine — and after that
-the list only changes when something is clicked.
 
 The Details table found the one thing in GTK that could break this budget.
 `GtkTreeView` sizes its columns by default with `GROW_ONLY`, which means it
@@ -168,6 +174,10 @@ changing your desktop settings:
 LANGUAGE=uk ./taskmanagerok     # Ukrainian
 LANGUAGE=en ./taskmanagerok     # English (the source strings)
 ```
+
+A `language=` line in `~/.config/taskmanagerok/settings.ini` wins over the
+environment — that is what the language row on the Settings page writes — and an
+empty one leaves the environment in charge.
 
 Number formatting is not hardcoded: the decimal separator comes from the
 `LC_NUMERIC` locale, so a Ukrainian or Romanian locale shows `2,79 ГГц` while
@@ -523,12 +533,16 @@ matching is done on the trimmed name instead.
 * Device discovery is Linux-only (`/proc`, `/sys`). Nothing is hardcoded to a
   specific disk, interface or CPU: the root device is resolved from the mount
   table, the network interface from the default route.
-* The left rail has five icons and five live tabs: Processes, Performance,
-  Startup, Details and Information. Clicking the icon of the tab you are already
-  on folds the device list away and brings it back — a Performance-only gesture, so the other
+* The left rail has five icons for five live tabs — Processes, Performance,
+  Startup, Details and Information — and a sixth, the gear, pinned to the bottom of
+  the rail rather than added to the stack, so that a stray click on the last tab
+  cannot open Settings. Clicking the icon of the tab you are already on folds the
+  device list away and brings it back — a Performance-only gesture, so the other
   four icons only switch tab — and with the list folded away there is no keyboard
   way to change device. Switching tabs is a click: the rail is one drawing area
-  and the icons are hit-tested by hand, so nothing in it takes focus.
+  and the icons are hit-tested by hand, so nothing in it takes focus. That also
+  means the rail has no focusable widget and no arrow-key way to move between
+  tabs; the tables themselves take the keyboard.
 * **The Information tab lists what the machine states about itself**, which is
   not everything a person might want to know about it. The module count is the
   number of SPD EEPROMs the kernel binds, so memory the firmware does not expose
@@ -592,19 +606,101 @@ The rules the page is built on:
   disappears while the page is open, the row goes with it and the selection moves
   back to the first device.
 
+## Settings
+
+The gear at the bottom of the rail opens a page with five questions on it. Nothing
+else in the window changes anything on disk, so this is the only place the program
+writes.
+
+| Row | Choices | Default | What it controls |
+|---|---|---|---|
+| Performance graph | 0.5, 1, 2, 3, 5, 10, 20, 30 s | 1 s | the timer that drives the whole window, and the width of the chart's window in seconds |
+| Process list | 1, 2, 3, 4, 5, 6, 10, 15, 20, 30 s | 4 s | the sweep of `/proc/<pid>/stat` and `/proc/<pid>/io` for every process |
+| Details table | the same list | 6 s | the same sweep with the extra fields and the command line |
+| Battery devices | the same list | 5 s | the rescan of `/sys/class/power_supply`, while that device is on screen |
+| Language | Follow the system, or any code with a catalogue beside the binary | Follow the system | which `po` catalogue the interface is drawn from |
+
+The answers go to `~/.config/taskmanagerok/settings.ini`, written through a
+temporary name and a rename, and read again on the next start:
+
+```ini
+[refresh]
+performance=1
+processes=4
+details=6
+battery=5
+
+[interface]
+language=
+```
+
+Three things about the page are deliberate:
+
+* **Every row says what it costs.** Next to each menu is the percentage of one core
+  that tab would take at that rate, worked out from the milliseconds each sweep
+  measures on the reference machine — a percent of a core is those milliseconds
+  divided by ten times the period in seconds, because a core offers 1000 ms in 10 s.
+  The defaults are the numbers in the table at the top of
+  [Status](#status), so the estimates and the measurements agree by construction;
+  the row for a table counts the graph tick as well, because that keeps running
+  underneath it. A line appears under the rows when a setting costs more than one
+  per cent, and it is a statement about this machine, not a lock: nothing stops you
+  from picking 0.5 s everywhere on a faster one.
+* **The estimates are four separate answers, not a total.** Only the tab you are
+  looking at is refreshed; the other three do nothing but hold their history.
+* **A table never runs faster than the graph.** The countdowns are counted in ticks
+  of the one timer the window has, so a 4 s list on a 3 s graph refreshes every
+  3 s. The estimate is computed from what actually happens, not from the number you
+  asked for, and the label on the Processes and Details headers prints the same
+  figure.
+
+Changing the language writes the file and starts a second copy of the program,
+which reads it, and then this one closes: the catalogue is chosen before GTK is
+initialised, so there is no in-place way to do it. A running AppImage restarts
+itself from its own path; a plain binary from `/proc/self/exe`. If the start fails
+the app says so and stays open, with the choice already saved. A language with no
+`.mo` next to the binary is not offered at all, because a menu entry that changes
+nothing is the kind of control this program does not have.
+
+The model behind those percentages was re-checked by pairing runs of the same tab
+back to back, because the machine could not be made idle for it: the session that
+wrote this held 59–62 % of the machine for every window, so the absolute figures
+are not comparable with the quiet rows above and only the differences are quoted.
+Each window is 25 s of the same build, one config at a time, and the difference
+divided by the extra sweeps it bought:
+
+| Paired at | | Machine | Cost of one more sweep |
+|---|---|---|---|
+| Performance tab, 1 s tick → 0.5 s | 0.45 % → 0.93 % of a core | 59–60 % busy | 4.8 ms (the card's tick: 3.4 ms) |
+| Processes tab, 4 s → 1 s | 0.99 % → 2.67 % | 59–60 % busy | 22 ms (the card's process sweep: 21 ms) |
+| Details tab, 6 s → 1 s | 1.19 % → 5.58 % | 61–62 % busy | 53 ms (the card's details sweep: 34 ms) |
+
+So the arithmetic is right where the program spends most of its time — the tick
+and the process sweep come out within the noise of the figures the card uses — and
+the Details row is the one place the estimate is a floor rather than an answer:
+thirteen columns of table repainted once a second are limited by memory traffic,
+which a neighbour on the same core makes worse faster than it makes the reading
+worse. A Details tab set to 1 s on this machine measured 5.58 % of a core where the
+card says 3.74 %. The estimate is left as the quiet figure, because that is the
+condition every other number in this file was read in.
+
+What is deliberately not here: no theme or colour picker (that is the next item on
+the roadmap), no per-column visibility, and nothing that would need a second
+process, a setting written anywhere else, or a privilege this program does not have.
+
 ## Roadmap
 
-1. Settings: the refresh interval of each tab and the interface language, kept in
-   `~/.config/taskmanagerok/`
-2. Services tab
-3. Per-user colour themes and a light variant
-4. Flatpak, on top of the AppImage
+1. Services tab
+2. Per-user colour themes and a light variant
+3. Flatpak, on top of the AppImage
 
 ## Layout
 
 ```
 src/stats.c     /proc, /sys and XDG autostart readers, no GUI dependency
 src/stats.h     SysStats snapshot, ProcTable and StartupTable
+src/settings.c  the settings file and the catalogue discovery, no GUI dependency
+src/settings.h  Settings struct and the four functions around it
 src/main.c      GTK 3 window, Cairo charts, gettext strings
 po/             translation catalogues (uk included)
 tools/test_stats.c   headless probe that prints every collected value

@@ -2,9 +2,9 @@ APP      := taskmanagerok
 PODIR    := po
 LANGS    := $(notdir $(patsubst %.po,%, $(wildcard $(PODIR)/*.po)))
 MOFILES  := $(foreach l,$(LANGS),locale/$(l)/LC_MESSAGES/$(APP).mo)
-LOCALEDIR := $(PREFIX)/share/locale
 
 PREFIX   ?= /usr/local
+LOCALEDIR := $(PREFIX)/share/locale
 BINDIR   := $(DESTDIR)$(PREFIX)/bin
 DATADIR  := $(DESTDIR)$(PREFIX)/share
 
@@ -16,7 +16,7 @@ CFLAGS   ?= -O2 -std=gnu11 -Wall -Wextra
 CPPFLAGS += -DLOCALEDIR=\"$(LOCALEDIR)\"
 LDLIBS   += -lm
 
-SRCS := src/main.c src/stats.c
+SRCS := src/main.c src/stats.c src/settings.c
 OBJS := $(SRCS:.c=.o)
 
 .PHONY: all clean test install uninstall pot
@@ -29,7 +29,8 @@ $(APP): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(GTK_CFLAGS) -c $< -o $@
 
-src/main.o: src/stats.h
+src/main.o: src/stats.h src/settings.h
+src/settings.o: src/settings.h
 src/stats.o: src/stats.h
 
 locale/%/LC_MESSAGES/$(APP).mo: $(PODIR)/%.po

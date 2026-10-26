@@ -10,15 +10,11 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "settings.h"
 #include "stats.h"
 
-#define GETTEXT_PACKAGE "taskmanagerok"
 #define _(s) gettext(s)
 #define N_(s) s
-
-#ifndef LOCALEDIR
-#define LOCALEDIR "/usr/local/share/locale"
-#endif
 
 static char radix_char = '.';
 
@@ -38,30 +34,20 @@ static void apply_radix(char *s) {
 
 /* Translations are looked up next to the binary first so that a checkout and
    an AppImage work without installing anything; the compiled-in path covers
-   `make install`. */
-static void init_i18n(void) {
-  setlocale(LC_ALL, "");
+   `make install`. The settings file is read here, before the first message is
+   ever translated, because a language chosen by hand has to be in force by the
+   time the window draws — and an empty choice simply leaves the environment
+   alone, which is what "follow the system" means. */
+static char applied_lang[16];
 
-  const char *rel[3] = {"locale", "share/locale", "../share/locale"};
-  int found = 0;
-  gchar *exe = g_file_read_link("/proc/self/exe", NULL);
-  if (exe) {
-    gchar *bindir = g_path_get_dirname(exe);
-    for (unsigned i = 0; i < 3 && !found; i++) {
-      gchar *dir = g_build_filename(bindir, rel[i], NULL);
-      gchar *probe = g_build_filename(dir, "uk", "LC_MESSAGES", GETTEXT_PACKAGE ".mo", NULL);
-      if (g_file_test(probe, G_FILE_TEST_EXISTS)) {
-        bindtextdomain(GETTEXT_PACKAGE, dir);
-        found = 1;
-      }
-      g_free(probe);
-      g_free(dir);
-    }
-    g_free(bindir);
-    g_free(exe);
-  }
-  if (!found)
-    bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
+static void init_i18n(Settings *s) {
+  setlocale(LC_ALL, "");
+  settings_load(s);
+  if (s->lang[0])
+    g_setenv("LANGUAGE", s->lang, TRUE);
+  snprintf(applied_lang, sizeof applied_lang, "%s", s->lang);
+
+  bindtextdomain(GETTEXT_PACKAGE, settings_locale_dir());
   bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
   textdomain(GETTEXT_PACKAGE);
 
@@ -86,24 +72,43 @@ static void init_i18n(void) {
 #define RAIL_Y0 26.0
 #define RAIL_PITCH 38.0
 #define RAIL_ICONS 5
+/* The gear is not a sixth tab icon: it sits at the bottom of the rail, away from
+   the stack, so that a stray click on the last tab cannot open settings. */
+#define RAIL_GEAR_Y 22.0
 
-/* The process list is sampled every fourth tick. Reading 205 processes costs
-   5.5 ms of CPU, but painting the rows that changed costs four times that, so
-   the cadence is what the redraw is worth rather than what the collector needs:
-   measured on the development machine, a sweep every 3 s holds the process tab
-   at 1.05 % of a core, every 4 s at 0.90 % and every 5 s at 0.76 %, against the
-   0.31 % the Performance tab costs. Four seconds buys the headroom to stay under
-   one per cent. The Performance graph keeps its 1 s step either way. */
-#define PROC_EVERY 4
+/* How often each sweep runs, in ticks of the graph timer. These were three
+   #defines; the numbers behind them are still the ones that were measured on the
+   reference machine — a sweep every 3 s holds the process tab at 1.05 % of a
+   core, every 4 s at 0.90 % and every 5 s at 0.76 %, against the 0.31 % the
+   Performance tab costs, so four seconds was what bought the headroom to stay
+   under one per cent. The user may now trade that headroom back, and the cost of
+   the trade is shown next to the control that makes it (see the settings card).
+   A countdown is a whole number of ticks, so a period is rounded to the nearest
+   one rather than chased exactly. */
+static Settings cfg;
+static double tick_s = 1.0;
+static int proc_ticks = 4, det_ticks = 6, batt_ticks = 5;
+static guint tick_id;
+
+static int ticks_for(double seconds) {
+  int n = (int)lround(seconds / tick_s);
+  return n < 1 ? 1 : n;
+}
+
+/* The seconds a countdown actually lasts, which is what a label has to say: a
+   0.5 s graph with a 4 s process sweep is still four ticks, but a 1 s graph with
+   a 4.5 s sweep asked for is four ticks, i.e. four seconds. */
+static int period_s(int ticks) { return (int)lround(ticks * tick_s); }
 
 /* The rail icon index is also the tab id: the first icon opens the process list,
-   the second is Performance, the third Startup, the fourth Details and the fifth
-   the machine information. Only the two process tabs have work that repeats on a
-   timer; the autostart list is a directory scan and the information is a set of
-   files read once, so both are re-collected when the tab opens (see set_tab).
-   The batteries live inside Performance as one of its devices, so they are
-   resampled when that device is the selected one. */
-enum { TAB_PROC, TAB_PERF, TAB_STARTUP, TAB_DETAILS, TAB_INFO };
+   the second is Performance, the third Startup, the fourth Details, the fifth
+   the machine information and the gear at the bottom the settings. Only the two
+   process tabs have work that repeats on a timer; the autostart list is a
+   directory scan and the information is a set of files read once, so both are
+   re-collected when the tab opens (see set_tab). The batteries live inside
+   Performance as one of its devices, so they are resampled when that device is
+   the selected one. */
+enum { TAB_PROC, TAB_PERF, TAB_STARTUP, TAB_DETAILS, TAB_INFO, TAB_SETTINGS };
 
 enum { U_PCT, U_RATE, U_TEMP };
 
@@ -141,8 +146,8 @@ static double hover_px = -1;
 
 /* The header under the window title says which tab is open. Indexing this by the
    tab id is what the four-deep ternary in set_tab had become. */
-static const char *tab_head[RAIL_ICONS] = {N_("Processes"), N_("Performance"), N_("Startup"),
-                                           N_("Details"),   N_("Information")};
+static const char *tab_head[RAIL_ICONS + 1] = {N_("Processes"), N_("Performance"), N_("Startup"),
+                                               N_("Details"),    N_("Information"), N_("Settings")};
 
 static const double accent[3] = {0.30, 0.76, 1.00};
 
@@ -489,8 +494,12 @@ static gboolean on_draw_graph(GtkWidget *w, cairo_t *cr, gpointer data) {
 
   cairo_set_font_size(cr, 10);
   cairo_set_source_rgb(cr, 0.52, 0.52, 0.52);
+  /* The curve always holds the same number of samples, so a slower tick
+     stretches the window it covers instead of shortening the line. */
+  char ax[24];
+  FMT(ax, sizeof ax, _("-%d s"), (int)lround(WINLEN * tick_s));
   cairo_move_to(cr, r.x, a.height - 4);
-  cairo_show_text(cr, _("-60 s"));
+  cairo_show_text(cr, ax);
   cairo_text_extents_t te;
   cairo_text_extents(cr, _("now"), &te);
   cairo_move_to(cr, r.x + r.w - te.width, a.height - 4);
@@ -557,6 +566,7 @@ static gboolean on_leave(GtkWidget *w, GdkEventCrossing *e, gpointer data) {
 /* ---------- process list ---------- */
 
 static void update_panel(void);
+static void refresh_settings_card(void);
 static void set_stats(int n, const char *const *vals, const char *const *labs);
 static void show_battery_device(void);
 static void sync_batt_row(void);
@@ -789,7 +799,7 @@ static void update_proc_panel(void) {
   if (pt.n == 0)
     snprintf(sub, sizeof sub, "%s", _("Collecting the process list"));
   else
-    FMT(sub, sizeof sub, _("%d processes  ·  updated every %d s"), pt.n, (int)PROC_EVERY);
+    FMT(sub, sizeof sub, _("%d processes  ·  updated every %d s"), pt.n, period_s(proc_ticks));
   gtk_label_set_text(GTK_LABEL(page_sub), sub);
 
   char vbuf[NST][80];
@@ -1063,11 +1073,11 @@ static void update_startup_panel(void) {
    value next to each other: "1:22:07" cannot be compared as a string when the
    sort has to know it is longer than "0:59:59".
 
-   The cadence is its own, and it is slower than the process list's: a sweep with
-   details costs 9.4 ms of CPU against 5.7 ms without them on the development
-   machine, for 208 processes. Nothing here is a rate, so the extra second buys
-   the budget back and no number on the screen goes wrong for want of it. */
-#define DET_EVERY 6
+   The default cadence is its own, and it is slower than the process list's: a
+   sweep with details costs 9.4 ms of CPU against 5.7 ms without them on the
+   development machine, for 208 processes. Nothing here is a rate, so the extra
+   second buys the budget back and no number on the screen goes wrong for want of
+   it; Settings is where to trade it. */
 static int det_countdown;
 
 enum {
@@ -1414,7 +1424,7 @@ static void update_details_panel(void) {
   if (pt.n == 0)
     snprintf(sub, sizeof sub, "%s", _("Collecting the process list"));
   else
-    FMT(sub, sizeof sub, _("%d processes  ·  updated every %d s"), pt.n, DET_EVERY);
+    FMT(sub, sizeof sub, _("%d processes  ·  updated every %d s"), pt.n, period_s(det_ticks));
   gtk_label_set_text(GTK_LABEL(page_sub), sub);
 
   char vbuf[NST][80];
@@ -1725,9 +1735,8 @@ static void on_info_row_selected(GtkListBox *box, GtkListBoxRow *row, gpointer u
    is the one number a person reads off a battery page. */
 
 /* A supply that has not been touched since the device was picked still answers a
-   read, so five seconds is often enough to notice a device joining or a level
-   moving, and the scan itself costs about a millisecond. */
-#define BATT_EVERY 5
+   read, so the default of five seconds is often enough to notice a device
+   joining or a level moving, and the scan itself costs about a millisecond. */
 
 static BatteryTable batt;
 static GtkWidget *batt_scroll, *batt_box;
@@ -1984,7 +1993,7 @@ static void batt_rebuild(void) {
 }
 
 /* The Battery device of the Performance tab. It replaces the graph rather than
-   sitting under it: there is no curve to draw (see the note above BATT_EVERY),
+   sitting under it: there is no curve to draw (see the note above its countdown),
    and the blocks are the only thing here worth the space. */
 static void show_battery_device(void) {
   gtk_widget_set_visible(graph_area, FALSE);
@@ -2064,7 +2073,7 @@ static void set_tab(int t) {
   gboolean perf = (t == TAB_PERF);
   /* One child of the stack is on screen at a time, which is what these five
      cards always meant to be. */
-  static const char *const tab_card[RAIL_ICONS] = {"proc", "perf", "start", "det", "info"};
+  static const char *const tab_card[RAIL_ICONS + 1] = {"proc", "perf", "start", "det", "info", "set"};
   gtk_stack_set_visible_child_name(GTK_STACK(card_stack), tab_card[t]);
   /* The device list belongs to the Performance tab and the section list to the
      Information tab; on the other three either would only take the width the
@@ -2083,6 +2092,8 @@ static void set_tab(int t) {
     stats_sample_procs(&pt, 1);
     det_countdown = 1;
     sync_det_rows();
+  } else if (t == TAB_SETTINGS) {
+    refresh_settings_card();
   } else if (t == TAB_INFO) {
     /* Once per opening, the way the autostart scan works: these files describe
        hardware that does not change while the window is up, and reading them on
@@ -2165,6 +2176,10 @@ static void sync_sens_rows(void) {
 }
 
 static void update_panel(void) {
+  /* The settings card says what it says until you change something; a tick that
+     reached in here would rewrite its title with the name of a device. */
+  if (tab == TAB_SETTINGS)
+    return;
   if (tab == TAB_PROC) {
     update_proc_panel();
     return;
@@ -2394,7 +2409,7 @@ static void on_row_selected(GtkListBox *b, GtkListBoxRow *row, gpointer data) {
        than a percentage changes and costs about a millisecond each time. Picking
        the row reads it first, so the blocks are never a stale frame. */
     stats_scan_batteries(&batt);
-    batt_countdown = BATT_EVERY;
+    batt_countdown = batt_ticks;
   }
   update_panel();
 }
@@ -2692,6 +2707,30 @@ static gboolean on_draw_rail(GtkWidget *w, cairo_t *cr, gpointer data) {
     }
     cairo_stroke(cr);
   }
+
+  /* A gear: a ring, eight teeth and a hub, drawn with the same 1.4 px round
+     stroke as the icons above it so that the rail reads as one set. */
+  double gx = a.width / 2.0, gy = a.height - RAIL_GEAR_Y;
+  cairo_set_line_width(cr, 1.4);
+  cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+  if (tab == TAB_SETTINGS) {
+    cairo_set_source_rgb(cr, accent[0], accent[1], accent[2]);
+    cairo_rectangle(cr, 1.5, gy - 10, 3, 20);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.95, 0.95, 0.95);
+  } else {
+    cairo_set_source_rgb(cr, 0.40, 0.40, 0.40);
+  }
+  cairo_arc(cr, gx, gy, 4.4, 0, 2 * M_PI);
+  for (int k = 0; k < 8; k++) {
+    double ang = k * M_PI / 4.0, dx = cos(ang), dy = sin(ang);
+    cairo_new_sub_path(cr);
+    cairo_move_to(cr, gx + dx * 5.0, gy + dy * 5.0);
+    cairo_line_to(cr, gx + dx * 6.6, gy + dy * 6.6);
+  }
+  cairo_new_sub_path(cr);
+  cairo_arc(cr, gx, gy, 1.6, 0, 2 * M_PI);
+  cairo_stroke(cr);
   return FALSE;
 }
 
@@ -2699,13 +2738,19 @@ static gboolean on_draw_rail(GtkWidget *w, cairo_t *cr, gpointer data) {
    icons are the five tabs, in order. Clicking the icon of the tab you are
    already on folds the device list away and back. */
 static gboolean on_rail_click(GtkWidget *w, GdkEventButton *ev, gpointer data) {
-  (void)w;
   (void)data;
   if (ev->button != 1)
     return FALSE;
+  GtkAllocation al;
+  gtk_widget_get_allocation(w, &al);
+  if (fabs(ev->y - (al.height - RAIL_GEAR_Y)) <= 11.0) {
+    set_tab(TAB_SETTINGS);
+    return TRUE;
+  }
   int i = (int)lround((ev->y - RAIL_Y0) / RAIL_PITCH);
   if (i < 0 || i >= RAIL_ICONS || fabs(ev->y - (RAIL_Y0 + i * RAIL_PITCH)) > RAIL_PITCH / 2.0)
     return FALSE;
+  /* Anything below the last tab icon but above the gear is dead rail. */
   if (i == tab && tab == TAB_PERF) {
     gboolean shown = gtk_widget_get_visible(dev_list);
     gtk_widget_set_visible(dev_list, !shown);
@@ -2739,15 +2784,15 @@ static gboolean on_tick(gpointer data) {
      is only swept while the process tab is on screen. The history keeps
      filling either way, so switching back shows no hole in the curve. */
   if (tab == TAB_PROC && --proc_countdown <= 0) {
-    proc_countdown = PROC_EVERY;
+    proc_countdown = proc_ticks;
     stats_sample_procs(&pt, 0);
     sync_proc_rows();
   } else if (tab == TAB_DETAILS && --det_countdown <= 0) {
-    det_countdown = DET_EVERY;
+    det_countdown = det_ticks;
     stats_sample_procs(&pt, 1);
     sync_det_rows();
   } else if (tab == TAB_PERF && sel == DEV_BATT && --batt_countdown <= 0) {
-    batt_countdown = BATT_EVERY;
+    batt_countdown = batt_ticks;
     stats_scan_batteries(&batt);
     sync_batt_row();
   }
@@ -2755,6 +2800,348 @@ static gboolean on_tick(gpointer data) {
   update_panel();
 
   return G_SOURCE_CONTINUE;
+}
+
+static void derive_cadence(void) {
+  tick_s = cfg.perf_s;
+  proc_ticks = ticks_for(cfg.proc_s);
+  det_ticks = ticks_for(cfg.det_s);
+  batt_ticks = ticks_for(cfg.batt_s);
+}
+
+/* Changing the graph period changes the unit every other countdown is counted
+   in, so all four are derived together and the one timer the window has is
+   re-armed. Nothing else is restarted: the history keeps its samples, and a
+   slower tick simply means the curve covers a longer stretch of them. */
+static void apply_cadence(void) {
+  derive_cadence();
+  if (tick_id)
+    g_source_remove(tick_id);
+  tick_id = g_timeout_add((guint)lround(tick_s * 1000.0), on_tick, NULL);
+}
+
+/* ---------- settings card ---------- */
+
+enum { SET_GRAPH, SET_PROC, SET_DET, SET_BATT, SET_ROWS };
+
+/* What one sweep costs, in milliseconds of CPU, measured on the reference
+   machine (Samsung R518, Core 2 Duo T9600). A percentage of one core is these
+   divided by ten times the period in seconds, because a core offers 1000 ms in
+   10 s. That is the arithmetic behind the figures the README quotes: 3.4 ms per
+   tick at 1 s is the 0.34 % the Performance tab was measured at, 21 ms per
+   process sweep at 4 s is what turned it into 0.90 %, 34 ms at 6 s the details
+   tab's 0.89 %, and 1.1 ms at 5 s the battery device's 0.38 %. */
+static const double set_ms[SET_ROWS] = {3.4, 21.0, 34.0, 1.1};
+static const double graph_opts[] = {0.5, 1, 2, 3, 5, 10, 20, 30};
+static const double table_opts[] = {1, 2, 3, 4, 5, 6, 10, 15, 20, 30};
+
+static const char set_expl_text[] = N_(
+    "Only the tab you are looking at is refreshed, so these four estimates are "
+    "four separate answers rather than a total. They are measured on the machine "
+    "this program was written on, and a table never runs faster than the graph "
+    "above it.");
+
+static GtkWidget *set_card, *set_msg, *set_note, *set_lang;
+static GtkWidget *set_combo[SET_ROWS], *set_est[SET_ROWS], *set_line[SET_ROWS], *set_sep[SET_ROWS];
+static char set_codes[SET_NLANG][16];
+static int set_nlang;
+static char set_err[256];
+/* TRUE while we are the ones moving a combo, so that our own repaint is not
+   mistaken for a choice and written back to the file. */
+static gboolean set_busy;
+
+static double asked_s(int r) {
+  switch (r) {
+    case SET_GRAPH: return cfg.perf_s;
+    case SET_PROC:  return cfg.proc_s;
+    case SET_DET:   return cfg.det_s;
+    default:        return cfg.batt_s;
+  }
+}
+
+static void set_asked(int r, double v) {
+  switch (r) {
+    case SET_GRAPH: cfg.perf_s = v; break;
+    case SET_PROC:  cfg.proc_s = v; break;
+    case SET_DET:   cfg.det_s = v; break;
+    default:        cfg.batt_s = v; break;
+  }
+}
+
+/* The period the countdown actually lasts: a whole number of ticks, which for a
+   table cannot be shorter than the graph's own step. */
+static double actual_s(int r) {
+  if (r == SET_GRAPH)
+    return tick_s;
+  int ticks = r == SET_PROC ? proc_ticks : r == SET_DET ? det_ticks : batt_ticks;
+  return (double)period_s(ticks);
+}
+
+static double est_pct(int r) {
+  double graph = r == SET_GRAPH ? 0 : set_ms[SET_GRAPH] / (10.0 * tick_s);
+  return graph + set_ms[r] / (10.0 * actual_s(r));
+}
+
+static void render_estimates(void) {
+  static const char *const row_name[SET_ROWS] = {N_("Performance graph"), N_("Process list"),
+                                                 N_("Details table"), N_("Battery devices")};
+  double e[SET_ROWS];
+  int over = 0, last = 0;
+  for (int r = 0; r < SET_ROWS; r++) {
+    if (!gtk_widget_get_visible(set_line[r]))
+      continue;
+    e[r] = est_pct(r);
+    if (e[r] > 1.0) {
+      over++;
+      last = r;
+    }
+    char num[24], txt[64];
+    FMT(num, sizeof num, "%.2f%%", e[r]);
+    FMT(txt, sizeof txt, _("≈ %s of one core"), num);
+    gtk_label_set_text(GTK_LABEL(set_est[r]), txt);
+  }
+  /* A write that failed outranks an estimate: the numbers on screen would
+     otherwise describe a change that never landed. */
+  char txt[256] = "";
+  if (set_err[0])
+    snprintf(txt, sizeof txt, "%s", set_err);
+  else if (over == 1)
+    snprintf(txt, sizeof txt, _("%s costs more than 1 %% of one core at this rate."),
+             _(row_name[last]));
+  else if (over > 1)
+    snprintf(txt, sizeof txt, _("%d rows cost more than 1 %% of one core at this rate."), over);
+  gtk_label_set_text(GTK_LABEL(set_msg), txt);
+}
+
+static void show_where(void) {
+  const char *path = settings_path();
+  char txt[512];
+  if (g_file_test(path, G_FILE_TEST_EXISTS))
+    snprintf(txt, sizeof txt, "%s", path);
+  else
+    snprintf(txt, sizeof txt, _("Nothing saved yet. Change anything and it is written to %s."),
+             path);
+  gtk_label_set_text(GTK_LABEL(page_sub), txt);
+}
+
+static void save_settings(void) {
+  char why[224];
+  set_err[0] = '\0';
+  if (!settings_save(&cfg, why, sizeof why))
+    snprintf(set_err, sizeof set_err, _("Not saved: %s"), why);
+  show_where();
+  /* The message line is where the budget warning lives too, so it is redrawn
+     after the write either way. */
+  render_estimates();
+}
+
+/* The language is decided before GTK is even initialised, so the only honest
+   way to apply it is a new process. An AppImage knows its own path; a checkout
+   reads it back from /proc/self/exe. Nothing is passed on: the child reads the
+   file that has just been written, which is where the choice now lives. */
+static void restart_self(void) {
+  const char *appimage = g_getenv("APPIMAGE");
+  char *self = (appimage && appimage[0]) ? g_strdup(appimage)
+                                         : g_file_read_link("/proc/self/exe", NULL);
+  char *argv[2] = {self, NULL};
+  GError *e = NULL;
+  gboolean ok = self && g_spawn_async(NULL, argv, NULL, G_SPAWN_DEFAULT, NULL, NULL, NULL, &e);
+  if (ok) {
+    gtk_main_quit();
+  } else {
+    snprintf(set_err, sizeof set_err, _("Saved, but the app could not restart: %s"),
+             e && e->message ? e->message : _("unknown reason"));
+    g_clear_error(&e);
+    show_where();
+    render_estimates();
+  }
+  g_free(self);
+}
+
+static void on_period_changed(GtkComboBox *cc, gpointer data) {
+  if (set_busy)
+    return;
+  const char *id = gtk_combo_box_get_active_id(cc);
+  if (!id)
+    return;
+  set_asked(GPOINTER_TO_INT(data), g_ascii_strtod(id, NULL));
+  apply_cadence();
+  save_settings();
+}
+
+static void on_lang_changed(GtkComboBox *cc, gpointer data) {
+  (void)data;
+  if (set_busy)
+    return;
+  const char *id = gtk_combo_box_get_active_id(cc);
+  snprintf(cfg.lang, sizeof cfg.lang, "%s", id ? id : "");
+  save_settings();
+  if (strcmp(cfg.lang, applied_lang) == 0)
+    return; /* the language already in force: nothing to restart for */
+  restart_self();
+}
+
+static void set_id(char *dst, size_t n, double v) { snprintf(dst, n, "%g", v); }
+
+static void add_period(GtkComboBoxText *cc, double v) {
+  char id[16], text[24];
+  set_id(id, sizeof id, v);
+  FMT(text, sizeof text, _("%g s"), v);
+  gtk_combo_box_text_append(cc, id, text);
+}
+
+/* A row of the card: the name of what refreshes, what it costs, and the menu
+   that changes it. The menu holds the fixed steps plus, when the file asked for
+   something else, that number too — a hand-edited 7 s has to stay selectable
+   rather than be silently rewritten to the nearest option. */
+static GtkWidget *add_setting_row(int r) {
+  static const char *const row_name[SET_ROWS] = {N_("Performance graph"), N_("Process list"),
+                                                 N_("Details table"), N_("Battery devices")};
+  GtkWidget *line = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_widget_set_margin_start(line, 10);
+  gtk_widget_set_margin_end(line, 10);
+  gtk_widget_set_margin_top(line, 6);
+  gtk_widget_set_margin_bottom(line, 6);
+  set_line[r] = line;
+
+  GtkWidget *name = gtk_label_new(_(row_name[r]));
+  gtk_widget_set_halign(name, GTK_ALIGN_START);
+  gtk_box_pack_start(GTK_BOX(line), name, FALSE, FALSE, 0);
+
+  const double *opts = r == SET_GRAPH ? graph_opts : table_opts;
+  int n = (int)(r == SET_GRAPH ? G_N_ELEMENTS(graph_opts) : G_N_ELEMENTS(table_opts));
+  double cur = asked_s(r);
+  int extra = n;
+  gboolean have = FALSE;
+  for (int i = 0; i < n; i++)
+    if (fabs(opts[i] - cur) < 1e-9)
+      have = TRUE;
+  if (!have) {
+    for (int i = 0; i < n; i++)
+      if (opts[i] > cur) {
+        extra = i;
+        break;
+      }
+    n++;
+  }
+
+  GtkWidget *cc = gtk_combo_box_text_new();
+  int active = 0;
+  for (int i = 0; i < n; i++) {
+    double v = i == extra ? cur : opts[i < extra ? i : i - 1];
+    if (fabs(v - cur) < 1e-9)
+      active = i;
+    add_period(GTK_COMBO_BOX_TEXT(cc), v);
+  }
+  gtk_combo_box_set_active(GTK_COMBO_BOX(cc), active);
+  gtk_widget_set_halign(cc, GTK_ALIGN_END);
+  set_combo[r] = cc;
+  set_est[r] = gtk_label_new("");
+  gtk_widget_set_halign(set_est[r], GTK_ALIGN_END);
+  gtk_widget_set_margin_end(set_est[r], 10);
+  gtk_style_context_add_class(gtk_widget_get_style_context(set_est[r]), "note");
+  gtk_box_pack_end(GTK_BOX(line), cc, FALSE, FALSE, 0);
+  gtk_box_pack_end(GTK_BOX(line), set_est[r], FALSE, FALSE, 0);
+  /* Connected only now: the selection above is ours, not the user's. */
+  g_signal_connect(cc, "changed", G_CALLBACK(on_period_changed), GINT_TO_POINTER(r));
+  return line;
+}
+
+static void build_settings_card(void) {
+  set_card = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  gtk_style_context_add_class(gtk_widget_get_style_context(set_card), "card");
+  gtk_widget_set_margin_top(set_card, 6);
+  gtk_stack_add_named(GTK_STACK(card_stack), set_card, "set");
+
+  GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  gtk_widget_set_margin_top(box, 4);
+  gtk_box_pack_start(GTK_BOX(set_card), box, FALSE, FALSE, 0);
+
+  for (int r = 0; r < SET_ROWS; r++) {
+    if (r) {
+      set_sep[r] = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
+      gtk_box_pack_start(GTK_BOX(box), set_sep[r], FALSE, FALSE, 0);
+    }
+    gtk_box_pack_start(GTK_BOX(box), add_setting_row(r), FALSE, FALSE, 0);
+  }
+
+  GtkWidget *line = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+  gtk_widget_set_margin_start(line, 10);
+  gtk_widget_set_margin_end(line, 10);
+  gtk_widget_set_margin_top(line, 6);
+  gtk_widget_set_margin_bottom(line, 6);
+  gtk_box_pack_start(GTK_BOX(box), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 0);
+  gtk_box_pack_start(GTK_BOX(box), line, FALSE, FALSE, 0);
+  GtkWidget *name = gtk_label_new(_("Language"));
+  gtk_widget_set_halign(name, GTK_ALIGN_START);
+  gtk_box_pack_start(GTK_BOX(line), name, FALSE, FALSE, 0);
+
+  set_lang = gtk_combo_box_text_new();
+  /* The catalogues that exist next to the binary, which is all this can promise:
+     a language with no .mo would be a menu entry that does nothing. */
+  set_nlang = settings_languages(set_codes, SET_NLANG);
+  gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(set_lang), NULL, _("Follow the system"));
+  for (int i = 0; i < set_nlang; i++)
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(set_lang), set_codes[i], set_codes[i]);
+  gtk_widget_set_halign(set_lang, GTK_ALIGN_END);
+  gtk_box_pack_end(GTK_BOX(line), set_lang, FALSE, FALSE, 0);
+  GtkWidget *hint = gtk_label_new(_("restarts the app"));
+  gtk_widget_set_halign(hint, GTK_ALIGN_END);
+  gtk_widget_set_margin_end(hint, 10);
+  gtk_style_context_add_class(gtk_widget_get_style_context(hint), "note");
+  gtk_box_pack_end(GTK_BOX(line), hint, FALSE, FALSE, 0);
+  g_signal_connect(set_lang, "changed", G_CALLBACK(on_lang_changed), NULL);
+
+  set_msg = gtk_label_new("");
+  gtk_widget_set_halign(set_msg, GTK_ALIGN_FILL);
+  gtk_widget_set_margin_start(set_msg, 10);
+  gtk_widget_set_margin_end(set_msg, 10);
+  gtk_widget_set_margin_top(set_msg, 6);
+  gtk_label_set_line_wrap(GTK_LABEL(set_msg), TRUE);
+  gtk_label_set_xalign(GTK_LABEL(set_msg), 0.0);
+  gtk_style_context_add_class(gtk_widget_get_style_context(set_msg), "note");
+  gtk_box_pack_start(GTK_BOX(set_card), set_msg, FALSE, FALSE, 0);
+
+  set_note = gtk_label_new(_(set_expl_text));
+  gtk_widget_set_halign(set_note, GTK_ALIGN_FILL);
+  gtk_widget_set_margin_start(set_note, 10);
+  gtk_widget_set_margin_end(set_note, 10);
+  gtk_widget_set_margin_top(set_note, 6);
+  gtk_widget_set_margin_bottom(set_note, 8);
+  gtk_label_set_line_wrap(GTK_LABEL(set_note), TRUE);
+  gtk_label_set_xalign(GTK_LABEL(set_note), 0.0);
+  gtk_style_context_add_class(gtk_widget_get_style_context(set_note), "note");
+  gtk_box_pack_start(GTK_BOX(set_card), set_note, FALSE, FALSE, 0);
+}
+
+static void refresh_settings_card(void) {
+  /* The strip of live numbers belongs to a device, and no device is on screen
+     here. */
+  set_stats(0, NULL, NULL);
+  gtk_label_set_text(GTK_LABEL(page_title), _("Settings"));
+  set_err[0] = '\0';
+
+  /* A cadence for a supply this machine does not have is a question with no
+     answer, so the row is left out the way the device list leaves its row out. */
+  gboolean has_batt = batt.n > 0;
+  gtk_widget_set_visible(set_line[SET_BATT], has_batt);
+  gtk_widget_set_visible(set_sep[SET_BATT], has_batt);
+
+  set_busy = TRUE;
+  for (int r = 0; r < SET_ROWS; r++) {
+    if (r == SET_BATT && !has_batt)
+      continue;
+    char id[16];
+    set_id(id, sizeof id, asked_s(r));
+    if (!gtk_combo_box_set_active_id(GTK_COMBO_BOX(set_combo[r]), id))
+      gtk_combo_box_set_active(GTK_COMBO_BOX(set_combo[r]), 0);
+  }
+  if (!gtk_combo_box_set_active_id(GTK_COMBO_BOX(set_lang), applied_lang))
+    gtk_combo_box_set_active(GTK_COMBO_BOX(set_lang), 0);
+  set_busy = FALSE;
+
+  render_estimates();
+  show_where();
 }
 
 /* ---------- ui construction ---------- */
@@ -2789,6 +3176,12 @@ static const char *CSS =
     "border-radius:4px; padding:4px 14px; font-size:12px; }"
     "button.toggleswitch:hover { background:#383838; border-color:#4a4a4a; }"
     "button.toggleswitch:disabled { background:#272727; color:#767676; border-color:#313131; }"
+    /* The settings menus are the only comboboxes here, and their button is the
+       system theme's light one until it is told what the window looks like. */
+    "combobox button { background:#2f2f2f; color:#f2f2f2; border:1px solid #3d3d3d; "
+    "border-radius:4px; padding:3px 8px; font-size:12px; }"
+    "combobox button:hover { background:#383838; border-color:#4a4a4a; }"
+    "combobox arrow { color:#a4a4a4; min-height:12px; min-width:12px; }"
     "scrollbar { background:#1e1e1e; border:0; }"
     "scrollbar slider { background:#3d3d3d; min-width:9px; min-height:9px; border-radius:5px; }"
     "scrollbar slider:hover { background:#4d4d4d; }"
@@ -3019,7 +3412,8 @@ static void sync_batt_row(void) {
 }
 
 int main(int argc, char **argv) {
-  init_i18n();
+  init_i18n(&cfg);
+  derive_cadence();
   gtk_init(&argc, &argv);
 
   const char *want = NULL;
@@ -3430,6 +3824,8 @@ int main(int argc, char **argv) {
     gtk_tree_view_append_column(GTK_TREE_VIEW(info_tree), c);
   }
 
+  build_settings_card();
+
   /* The Battery device shows a stack of blocks rather than a table, because a
      supply answers a different set of questions from its neighbour: one has a
      wear figure, one has only a name. It lives inside the Performance card and
@@ -3491,7 +3887,7 @@ int main(int argc, char **argv) {
                           gtk_list_box_get_row_at_index(GTK_LIST_BOX(info_list), 0));
   update_panel();
   on_tick(NULL);
-  g_timeout_add(1000, on_tick, NULL);
+  apply_cadence();
 
   gtk_main();
   return 0;
