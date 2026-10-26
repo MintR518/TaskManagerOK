@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 15:01+0200\n"
+"POT-Creation-Date: 2026-10-26 16:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,19 +16,19 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/main.c:122 src/main.c:3580
+#: src/main.c:122 src/main.c:3738
 msgid "CPU"
 msgstr ""
 
-#: src/main.c:122 src/main.c:1097 src/main.c:1466 src/main.c:3580
+#: src/main.c:122 src/main.c:1100 src/main.c:1472 src/main.c:3738
 msgid "Memory"
 msgstr ""
 
-#: src/main.c:122 src/main.c:3580
+#: src/main.c:122 src/main.c:3738
 msgid "Disk"
 msgstr ""
 
-#: src/main.c:122
+#: src/main.c:122 src/main.c:1473
 msgid "Network"
 msgstr ""
 
@@ -36,7 +36,7 @@ msgstr ""
 msgid "GPU"
 msgstr ""
 
-#: src/main.c:123 src/main.c:2377
+#: src/main.c:123 src/main.c:2507
 #, c-format
 msgid "Temperature"
 msgstr ""
@@ -45,840 +45,909 @@ msgstr ""
 msgid "Battery"
 msgstr ""
 
-#: src/main.c:149 src/main.c:797 src/main.c:817 src/main.c:1435
+#: src/main.c:152 src/main.c:800 src/main.c:820 src/main.c:1438
 #, c-format
 msgid "Processes"
 msgstr ""
 
-#: src/main.c:149 src/main.c:3429
+#: src/main.c:152 src/main.c:3594
 msgid "Performance"
 msgstr ""
 
-#: src/main.c:149 src/main.c:1025
+#: src/main.c:152 src/main.c:1028
 msgid "Startup"
 msgstr ""
 
-#: src/main.c:150 src/main.c:1422
+#: src/main.c:153 src/main.c:1425
 msgid "Details"
 msgstr ""
 
-#: src/main.c:150 src/main.c:1709
+#: src/main.c:153 src/main.c:1800
 msgid "Information"
 msgstr ""
 
-#: src/main.c:150 src/main.c:3116
+#: src/main.c:153 src/main.c:3269
 msgid "Settings"
 msgstr ""
 
-#: src/main.c:282 src/main.c:2159 src/main.c:2161 src/main.c:2344
-#: src/main.c:2350 src/main.c:2355 src/main.c:2374
+#: src/main.c:285 src/main.c:2289 src/main.c:2291 src/main.c:2474
+#: src/main.c:2480 src/main.c:2485 src/main.c:2504
 #, c-format
 msgid "%.0f °C"
 msgstr ""
 
-#: src/main.c:284 src/main.c:598
+#: src/main.c:287 src/main.c:601
 #, c-format
 msgid "%.1f MB/s"
 msgstr ""
 
-#: src/main.c:286 src/main.c:600
+#: src/main.c:289 src/main.c:603
 #, c-format
 msgid "%.0f KB/s"
 msgstr ""
 
-#: src/main.c:295
+#: src/main.c:298
 #, c-format
 msgid "%.2f MB/s"
 msgstr ""
 
-#: src/main.c:450
+#: src/main.c:453
 #, c-format
 msgid "  -%d s"
 msgstr ""
 
-#: src/main.c:500
+#: src/main.c:503
 #, c-format
 msgid "-%d s"
 msgstr ""
 
-#: src/main.c:504 src/main.c:506
+#: src/main.c:507 src/main.c:509
 msgid "now"
 msgstr ""
 
-#: src/main.c:584
+#: src/main.c:587
 #, c-format
 msgid "%.1f%%"
 msgstr ""
 
-#: src/main.c:589 src/main.c:1189 src/main.c:2302
+#: src/main.c:592 src/main.c:1192 src/main.c:2432
 #, c-format
 msgid "%.2f GiB"
 msgstr ""
 
-#: src/main.c:591
+#: src/main.c:594
 #, c-format
 msgid "%.0f MiB"
 msgstr ""
 
-#: src/main.c:800 src/main.c:1425
+#: src/main.c:803 src/main.c:1428
 msgid "Collecting the process list"
 msgstr ""
 
-#: src/main.c:802 src/main.c:1427
+#: src/main.c:805 src/main.c:1430
 #, c-format
 msgid "%d processes  ·  updated every %d s"
 msgstr ""
 
-#: src/main.c:810
+#: src/main.c:813
 #, c-format
 msgid "Total CPU"
 msgstr ""
 
-#: src/main.c:811 src/main.c:2299 src/main.c:2305 src/main.c:2380
+#: src/main.c:814 src/main.c:2429 src/main.c:2435 src/main.c:2510
 #, c-format
 msgid "%.2f / %.2f GiB"
 msgstr ""
 
-#: src/main.c:813
+#: src/main.c:816
 #, c-format
 msgid "Memory in use"
 msgstr ""
 
-#: src/main.c:815
+#: src/main.c:818
 #, c-format
 msgid "Disk activity"
 msgstr ""
 
-#: src/main.c:816
+#: src/main.c:819
 #, c-format
 msgid "%d  ·  %d yours"
 msgstr ""
 
-#: src/main.c:832 src/main.c:1047
+#: src/main.c:835 src/main.c:1050
 #, c-format
 msgid "Enabled"
 msgstr ""
 
-#: src/main.c:832 src/main.c:1050
+#: src/main.c:835 src/main.c:1053
 #, c-format
 msgid "Disabled"
 msgstr ""
 
-#: src/main.c:832 src/main.c:1054
+#: src/main.c:835 src/main.c:1057
 #, c-format
 msgid "Other desktop"
 msgstr ""
 
-#: src/main.c:909
+#: src/main.c:912
 msgid "Select an entry to change it"
 msgstr ""
 
-#: src/main.c:911
+#: src/main.c:914
 msgid ""
 "This entry names another desktop; what decides is its OnlyShowIn line, not a "
 "switch"
 msgstr ""
 
-#: src/main.c:913
+#: src/main.c:916
 msgid "The autostart directory of this user is not writable"
 msgstr ""
 
-#: src/main.c:917
+#: src/main.c:920
 msgid "Do not start this at login"
 msgstr ""
 
-#: src/main.c:917
+#: src/main.c:920
 msgid "Start this at login"
 msgstr ""
 
-#: src/main.c:921
+#: src/main.c:924
 msgid "Enable"
 msgstr ""
 
-#: src/main.c:921 src/main.c:3675
+#: src/main.c:924 src/main.c:3833
 msgid "Disable"
 msgstr ""
 
-#: src/main.c:943
+#: src/main.c:946
 #, c-format
 msgid "Could not change %s: %s"
 msgstr ""
 
-#: src/main.c:989 src/main.c:1538
+#: src/main.c:992 src/main.c:1560
 msgid "User"
 msgstr ""
 
-#: src/main.c:989 src/main.c:1466
+#: src/main.c:992 src/main.c:1472
 msgid "System"
 msgstr ""
 
-#: src/main.c:1014
+#: src/main.c:1017
 msgid "No autostart entries were found in the directories this session reads."
 msgstr ""
 
-#: src/main.c:1017
+#: src/main.c:1020
 msgid ""
 "Only entries that name another desktop are never started here. The list "
 "stops at the first 160 entries."
 msgstr ""
 
-#: src/main.c:1021
+#: src/main.c:1024
 msgid "Only entries that name another desktop are never started here."
 msgstr ""
 
-#: src/main.c:1034
+#: src/main.c:1037
 msgid "No entries"
 msgstr ""
 
-#: src/main.c:1039
+#: src/main.c:1042
 #, c-format
 msgid "%d entries  ·  %d start at login"
 msgstr ""
 
-#: src/main.c:1044
+#: src/main.c:1047
 #, c-format
 msgid "Entries"
 msgstr ""
 
-#: src/main.c:1095 src/main.c:3580 src/main.c:3639
+#: src/main.c:1098 src/main.c:3738 src/main.c:3797
 msgid "Name"
 msgstr ""
 
-#: src/main.c:1095
+#: src/main.c:1098
 msgid "PID"
 msgstr ""
 
-#: src/main.c:1095
+#: src/main.c:1098
 msgid "Status"
 msgstr ""
 
-#: src/main.c:1096
+#: src/main.c:1099
 msgid "User name"
 msgstr ""
 
-#: src/main.c:1096
+#: src/main.c:1099
 msgid "CPU time"
 msgstr ""
 
-#: src/main.c:1096
+#: src/main.c:1099
 msgid "Time elapsed"
 msgstr ""
 
-#: src/main.c:1097
+#: src/main.c:1100
 msgid "Disk read"
 msgstr ""
 
-#: src/main.c:1097
+#: src/main.c:1100
 msgid "Disk write"
 msgstr ""
 
-#: src/main.c:1098 src/main.c:1448
+#: src/main.c:1101 src/main.c:1451
 #, c-format
 msgid "Threads"
 msgstr ""
 
-#: src/main.c:1098
+#: src/main.c:1101
 msgid "Priority"
 msgstr ""
 
-#: src/main.c:1098
+#: src/main.c:1101
 msgid "Parent PID"
 msgstr ""
 
-#: src/main.c:1099
+#: src/main.c:1102
 msgid "Command line"
 msgstr ""
 
-#: src/main.c:1121
+#: src/main.c:1124
 msgid "Running"
 msgstr ""
 
-#: src/main.c:1123
+#: src/main.c:1126
 msgid "Sleeping"
 msgstr ""
 
-#: src/main.c:1125 src/main.c:1443
+#: src/main.c:1128 src/main.c:1446
 #, c-format
 msgid "Waiting for disk"
 msgstr ""
 
-#: src/main.c:1127
+#: src/main.c:1130
 msgid "Zombie"
 msgstr ""
 
-#: src/main.c:1130
+#: src/main.c:1133
 msgid "Stopped"
 msgstr ""
 
-#: src/main.c:1132
+#: src/main.c:1135
 msgid "Idle"
 msgstr ""
 
-#: src/main.c:1166
+#: src/main.c:1169
 #, c-format
 msgid "%lu:%02lu:%02lu"
 msgstr ""
 
-#: src/main.c:1178
+#: src/main.c:1181
 #, c-format
 msgid "%lu d %02lu:%02lu"
 msgstr ""
 
-#: src/main.c:1187
+#: src/main.c:1190
 #, c-format
 msgid "%.2f TiB"
 msgstr ""
 
-#: src/main.c:1191
+#: src/main.c:1194
 #, c-format
 msgid "%.1f MiB"
 msgstr ""
 
-#: src/main.c:1193
+#: src/main.c:1196
 #, c-format
 msgid "%.0f KiB"
 msgstr ""
 
-#: src/main.c:1195
+#: src/main.c:1198
 #, c-format
 msgid "%llu B"
 msgstr ""
 
-#: src/main.c:1204
+#: src/main.c:1207
 #, c-format
 msgid "real-time %ld"
 msgstr ""
 
-#: src/main.c:1206
+#: src/main.c:1209
 #, c-format
 msgid "nice %d"
 msgstr ""
 
-#: src/main.c:1225
+#: src/main.c:1228
 #, c-format
 msgid "(%c)"
 msgstr ""
 
-#: src/main.c:1436
+#: src/main.c:1439
 #, c-format
 msgid "%d  ·  %.0f MiB"
 msgstr ""
 
-#: src/main.c:1437
+#: src/main.c:1440
 #, c-format
 msgid "Yours  ·  memory"
 msgstr ""
 
-#: src/main.c:1466 src/main.c:2351
+#: src/main.c:1472 src/main.c:2481
 #, c-format
 msgid "Processor"
 msgstr ""
 
-#: src/main.c:1467
+#: src/main.c:1472
+msgid "Processor protection"
+msgstr ""
+
+#: src/main.c:1473
 msgid "Motherboard"
 msgstr ""
 
-#: src/main.c:1467
-msgid "Video"
+#: src/main.c:1473
+msgid "Display and audio"
 msgstr ""
 
-#: src/main.c:1467
+#: src/main.c:1473
 msgid "Disks"
 msgstr ""
 
-#: src/main.c:1484
+#: src/main.c:1496
 msgid "Desktop computer"
 msgstr ""
 
-#: src/main.c:1485
+#: src/main.c:1497
 msgid "Low profile desktop"
 msgstr ""
 
-#: src/main.c:1486
+#: src/main.c:1498
 msgid "Tower"
 msgstr ""
 
-#: src/main.c:1487
+#: src/main.c:1499
 msgid "Portable"
 msgstr ""
 
-#: src/main.c:1488
+#: src/main.c:1500
 msgid "Notebook"
 msgstr ""
 
-#: src/main.c:1489
+#: src/main.c:1501
 msgid "Hand held"
 msgstr ""
 
-#: src/main.c:1490
+#: src/main.c:1502
 msgid "Docking station"
 msgstr ""
 
-#: src/main.c:1491
+#: src/main.c:1503
 msgid "All in one"
 msgstr ""
 
-#: src/main.c:1492
+#: src/main.c:1504
 msgid "Subnotebook"
 msgstr ""
 
-#: src/main.c:1493
+#: src/main.c:1505
 msgid "Lunch box"
 msgstr ""
 
-#: src/main.c:1494
+#: src/main.c:1506
 msgid "Server chassis"
 msgstr ""
 
-#: src/main.c:1495
+#: src/main.c:1507
 msgid "Blade"
 msgstr ""
 
-#: src/main.c:1527
+#: src/main.c:1549
 msgid "Operating system"
 msgstr ""
 
-#: src/main.c:1528
+#: src/main.c:1550
 msgid "Kernel"
 msgstr ""
 
-#: src/main.c:1529
+#: src/main.c:1551
 msgid "Architecture"
 msgstr ""
 
-#: src/main.c:1535
+#: src/main.c:1557
 msgid "Session"
 msgstr ""
 
-#: src/main.c:1537
+#: src/main.c:1559
 msgid "Computer name"
 msgstr ""
 
-#: src/main.c:1540
+#: src/main.c:1561
+msgid "Init system"
+msgstr ""
+
+#: src/main.c:1562
+msgid "Boot"
+msgstr ""
+
+#: src/main.c:1562
+msgid "UEFI"
+msgstr ""
+
+#: src/main.c:1562
+msgid "Legacy BIOS"
+msgstr ""
+
+#: src/main.c:1563
+msgid "cgroup"
+msgstr ""
+
+#: src/main.c:1569
+msgid "Sleep"
+msgstr ""
+
+#: src/main.c:1572
 msgid "Uptime"
 msgstr ""
 
-#: src/main.c:1542
+#: src/main.c:1574
 msgid "Model"
 msgstr ""
 
-#: src/main.c:1543
+#: src/main.c:1575
 msgid "Vendor"
 msgstr ""
 
-#: src/main.c:1546
+#: src/main.c:1578
 msgid "Cores"
 msgstr ""
 
-#: src/main.c:1547
+#: src/main.c:1579
 msgid "Logical processors"
 msgstr ""
 
-#: src/main.c:1554
+#: src/main.c:1586
 msgid "Data"
 msgstr ""
 
-#: src/main.c:1555
+#: src/main.c:1587
 msgid "Instruction"
 msgstr ""
 
-#: src/main.c:1556
+#: src/main.c:1588
 msgid "Unified"
 msgstr ""
 
-#: src/main.c:1570
+#: src/main.c:1602
 #, c-format
 msgid "Cache L%d"
 msgstr ""
 
-#: src/main.c:1574
+#: src/main.c:1606
 msgid "Speed range"
 msgstr ""
 
-#: src/main.c:1574
+#: src/main.c:1606
 #, c-format
 msgid "%.2f–%.2f GHz"
 msgstr ""
 
-#: src/main.c:1576
+#: src/main.c:1608
 msgid "Current speed"
 msgstr ""
 
-#: src/main.c:1576 src/main.c:2280
+#: src/main.c:1608 src/main.c:2410
 #, c-format
 msgid "%.2f GHz"
 msgstr ""
 
-#: src/main.c:1577
+#: src/main.c:1609
 msgid "Speed control"
 msgstr ""
 
-#: src/main.c:1580 src/main.c:2330
+#: src/main.c:1610
+msgid "Speed driver"
+msgstr ""
+
+#: src/main.c:1620 src/main.c:2460
 #, c-format
 msgid "Total"
 msgstr ""
 
-#: src/main.c:1582
+#: src/main.c:1622
 msgid "Free"
 msgstr ""
 
-#: src/main.c:1583
+#: src/main.c:1623
 msgid "Type"
 msgstr ""
 
-#: src/main.c:1587
+#: src/main.c:1627
 msgid "Modules"
 msgstr ""
 
-#: src/main.c:1593
+#: src/main.c:1633
 msgid "Swap"
 msgstr ""
 
-#: src/main.c:1596
+#: src/main.c:1642
+#, c-format
+msgid "priority %ld"
+msgstr ""
+
+#: src/main.c:1646
 msgid "Manufacturer"
 msgstr ""
 
-#: src/main.c:1597
+#: src/main.c:1647
 msgid "Product"
 msgstr ""
 
-#: src/main.c:1603
+#: src/main.c:1653
 msgid "Board"
 msgstr ""
 
-#: src/main.c:1610
+#: src/main.c:1660
 msgid "BIOS"
 msgstr ""
 
-#: src/main.c:1612
+#: src/main.c:1662
 msgid "BIOS date"
 msgstr ""
 
-#: src/main.c:1616 src/main.c:1618
+#: src/main.c:1666 src/main.c:1668
 msgid "Chassis"
 msgstr ""
 
-#: src/main.c:1618
+#: src/main.c:1668
 #, c-format
 msgid "Type %d"
 msgstr ""
 
-#: src/main.c:1621
+#: src/main.c:1671
 msgid "Adapter"
 msgstr ""
 
-#: src/main.c:1624
+#: src/main.c:1674
 #, c-format
 msgid "%s (%s)"
 msgstr ""
 
-#: src/main.c:1627
+#: src/main.c:1677
 msgid "Driver"
 msgstr ""
 
-#: src/main.c:1641
+#: src/main.c:1691
 #, c-format
 msgid "Display %d"
 msgstr ""
 
-#: src/main.c:1643
+#: src/main.c:1693
 msgid "Display"
 msgstr ""
 
-#: src/main.c:1645
+#: src/main.c:1695
 #, c-format
 msgid "%d×%d  ·  %.2f Hz"
 msgstr ""
 
-#: src/main.c:1647
+#: src/main.c:1697
 #, c-format
 msgid "%d×%d"
 msgstr ""
 
-#: src/main.c:1794
+#: src/main.c:1703
+#, c-format
+msgid "%ld / %ld  ·  %d %%"
+msgstr ""
+
+#: src/main.c:1705
+msgid "Brightness"
+msgstr ""
+
+#: src/main.c:1707
+msgid "Sound"
+msgstr ""
+
+#: src/main.c:1728
+#, c-format
+msgid "%d/%d B"
+msgstr ""
+
+#: src/main.c:1735
+#, c-format
+msgid "Read-ahead %s"
+msgstr ""
+
+#: src/main.c:1739
+#, c-format
+msgid "firmware %s"
+msgstr ""
+
+#: src/main.c:1743
+msgid "Queue"
+msgstr ""
+
+#: src/main.c:1924
 msgid "Charging"
 msgstr ""
 
-#: src/main.c:1796
+#: src/main.c:1926
 msgid "Discharging"
 msgstr ""
 
-#: src/main.c:1798
+#: src/main.c:1928
 msgid "Fully charged"
 msgstr ""
 
-#: src/main.c:1800
+#: src/main.c:1930
 msgid "Plugged in, holding"
 msgstr ""
 
-#: src/main.c:1800
+#: src/main.c:1930
 msgid "Not charging"
 msgstr ""
 
-#: src/main.c:1802
+#: src/main.c:1932
 msgid "Empty"
 msgstr ""
 
-#: src/main.c:1884
+#: src/main.c:2014
 #, c-format
 msgid "%d %%"
 msgstr ""
 
-#: src/main.c:1896
+#: src/main.c:2026
 msgid "No level is reported for this battery"
 msgstr ""
 
-#: src/main.c:1915
+#: src/main.c:2045
 #, c-format
 msgid "%lld mAh"
 msgstr ""
 
-#: src/main.c:1918
+#: src/main.c:2048
 #, c-format
 msgid "wear %d %%"
 msgstr ""
 
-#: src/main.c:1920
+#: src/main.c:2050
 #, c-format
 msgid "cycles: %d"
 msgstr ""
 
-#: src/main.c:1987
+#: src/main.c:2117
 msgid "Devices"
 msgstr ""
 
-#: src/main.c:1987
+#: src/main.c:2117
 msgid "Batteries"
 msgstr ""
 
-#: src/main.c:2023
+#: src/main.c:2153
 msgid "Peripherals only"
 msgstr ""
 
-#: src/main.c:2042
+#: src/main.c:2172
 msgid "Level"
 msgstr ""
 
-#: src/main.c:2044 src/main.c:3639
+#: src/main.c:2174 src/main.c:3797
 msgid "State"
 msgstr ""
 
-#: src/main.c:2049
+#: src/main.c:2179
 msgid "Time left"
 msgstr ""
 
-#: src/main.c:2049
+#: src/main.c:2179
 msgid "Time to full"
 msgstr ""
 
-#: src/main.c:2053
+#: src/main.c:2183
 msgid "Health"
 msgstr ""
 
-#: src/main.c:2063
+#: src/main.c:2193
 msgid ""
 "CPU and memory cover every process; disk activity is only readable for the "
 "processes you own."
 msgstr ""
 
-#: src/main.c:2065
+#: src/main.c:2195
 msgid ""
 "The byte counters come from the kernel's per-process io file, which only "
 "your own processes let anyone read."
 msgstr ""
 
-#: src/main.c:2213
+#: src/main.c:2343
 #, c-format
 msgid "%s  ·  %.2f GiB  ·  cache %.2f GiB"
 msgstr ""
 
-#: src/main.c:2216
+#: src/main.c:2346
 #, c-format
 msgid "Installed: %.2f GiB  ·  cache %.2f GiB"
 msgstr ""
 
-#: src/main.c:2227
+#: src/main.c:2357
 #, c-format
 msgid "%s  ·  %ld Mbit/s"
 msgstr ""
 
-#: src/main.c:2229
+#: src/main.c:2359
 #, c-format
 msgid "%s  ·  Wi-Fi  ·  %d dBm  ·  quality %d"
 msgstr ""
 
-#: src/main.c:2232
+#: src/main.c:2362
 #, c-format
 msgid "%s  ·  link speed unavailable"
 msgstr ""
 
-#: src/main.c:2245
+#: src/main.c:2375
 #, c-format
 msgid "%d sensors  ·  highest %s  ·  limit %.0f °C"
 msgstr ""
 
-#: src/main.c:2248
+#: src/main.c:2378
 #, c-format
 msgid "%d sensors  ·  highest %s"
 msgstr ""
 
-#: src/main.c:2263
+#: src/main.c:2393
 msgid "This driver does not report GPU utilisation"
 msgstr ""
 
-#: src/main.c:2277 src/main.c:2297 src/main.c:2311 src/main.c:2371
+#: src/main.c:2407 src/main.c:2427 src/main.c:2441 src/main.c:2501
 #, c-format
 msgid "Load"
 msgstr ""
 
-#: src/main.c:2282 src/main.c:2370 src/main.c:2376
+#: src/main.c:2412 src/main.c:2500 src/main.c:2506
 #, c-format
 msgid "Unavailable"
 msgstr ""
 
-#: src/main.c:2283
+#: src/main.c:2413
 #, c-format
 msgid "Speed"
 msgstr ""
 
-#: src/main.c:2285
+#: src/main.c:2415
 #, c-format
 msgid "%d processes · %d cores"
 msgstr ""
 
-#: src/main.c:2286
+#: src/main.c:2416
 #, c-format
 msgid "System processor"
 msgstr ""
 
-#: src/main.c:2290
+#: src/main.c:2420
 #, c-format
 msgid "Uptime · %.2f average"
 msgstr ""
 
-#: src/main.c:2300
+#: src/main.c:2430
 #, c-format
 msgid "In use / Total"
 msgstr ""
 
-#: src/main.c:2303
+#: src/main.c:2433
 #, c-format
 msgid "Available"
 msgstr ""
 
-#: src/main.c:2307
+#: src/main.c:2437
 #, c-format
 msgid "Paging file"
 msgstr ""
 
-#: src/main.c:2314
+#: src/main.c:2444
 #, c-format
 msgid "Read"
 msgstr ""
 
-#: src/main.c:2317
+#: src/main.c:2447
 #, c-format
 msgid "Write"
 msgstr ""
 
-#: src/main.c:2319
+#: src/main.c:2449
 #, c-format
 msgid "%.0f GB"
 msgstr ""
 
-#: src/main.c:2320
+#: src/main.c:2450
 #, c-format
 msgid "Capacity"
 msgstr ""
 
-#: src/main.c:2324
+#: src/main.c:2454
 #, c-format
 msgid "Receive"
 msgstr ""
 
-#: src/main.c:2327
+#: src/main.c:2457
 #, c-format
 msgid "Send"
 msgstr ""
 
-#: src/main.c:2332
+#: src/main.c:2462
 #, c-format
 msgid "%.1f GiB received · %.1f GiB sent"
 msgstr ""
 
-#: src/main.c:2334
+#: src/main.c:2464
 #, c-format
 msgid "Interface totals"
 msgstr ""
 
-#: src/main.c:2341 src/main.c:2360
+#: src/main.c:2471 src/main.c:2490
 #, c-format
 msgid "Sensors"
 msgstr ""
 
-#: src/main.c:2345
+#: src/main.c:2475
 #, c-format
 msgid "Highest"
 msgstr ""
 
-#: src/main.c:2356 src/main.c:3539
+#: src/main.c:2486 src/main.c:3697
 #, c-format
 msgid "Limit"
 msgstr ""
 
-#: src/main.c:2359
+#: src/main.c:2489
 #, c-format
 msgid "%d readable"
 msgstr ""
 
-#: src/main.c:2382
+#: src/main.c:2512
 #, c-format
 msgid "Dedicated memory"
 msgstr ""
 
-#: src/main.c:2457
+#: src/main.c:2587
 msgid "this is the task manager itself"
 msgstr ""
 
-#: src/main.c:2463
+#: src/main.c:2593
 #, c-format
 msgid "it is %s's process"
 msgstr ""
 
-#: src/main.c:2467
+#: src/main.c:2597
 msgid "it has already finished"
 msgstr ""
 
-#: src/main.c:2477
+#: src/main.c:2607
 #, c-format
 msgid "%s — %s"
 msgstr ""
 
-#: src/main.c:2477 src/main.c:2479 src/main.c:2633
+#: src/main.c:2607 src/main.c:2609 src/main.c:2763
 msgid "End task"
 msgstr ""
 
-#: src/main.c:2498
+#: src/main.c:2628
 #, c-format
 msgid "“%s” did not answer and cannot be terminated."
 msgstr ""
 
-#: src/main.c:2516
+#: src/main.c:2646
 #, c-format
 msgid "“%s” had already ended."
 msgstr ""
 
-#: src/main.c:2518
+#: src/main.c:2648
 #, c-format
 msgid "Could not signal “%s”: %s"
 msgstr ""
 
-#: src/main.c:2526
+#: src/main.c:2656
 #, c-format
 msgid "PID %d  ·  %s  ·  %s"
 msgstr ""
 
-#: src/main.c:2528
+#: src/main.c:2658
 #, c-format
 msgid ""
 "%s\n"
@@ -887,20 +956,20 @@ msgid ""
 "first, and if it is still there in %d s it is terminated."
 msgstr ""
 
-#: src/main.c:2533
+#: src/main.c:2663
 #, c-format
 msgid "End “%s”?"
 msgstr ""
 
-#: src/main.c:2535
+#: src/main.c:2665
 msgid "_Cancel"
 msgstr ""
 
-#: src/main.c:2536
+#: src/main.c:2666
 msgid "_End task"
 msgstr ""
 
-#: src/main.c:2839
+#: src/main.c:2987
 msgid ""
 "Only the tab you are looking at is refreshed, so these four estimates are "
 "four separate answers rather than a total. They are measured on the machine "
@@ -908,86 +977,86 @@ msgid ""
 "above it."
 msgstr ""
 
-#: src/main.c:2886 src/main.c:2996
+#: src/main.c:3034 src/main.c:3146
 msgid "Performance graph"
 msgstr ""
 
-#: src/main.c:2886 src/main.c:2996
+#: src/main.c:3034 src/main.c:3146
 msgid "Process list"
 msgstr ""
 
-#: src/main.c:2887 src/main.c:2997
+#: src/main.c:3035 src/main.c:3147
 msgid "Details table"
 msgstr ""
 
-#: src/main.c:2887 src/main.c:2997
+#: src/main.c:3035 src/main.c:3147
 msgid "Battery devices"
 msgstr ""
 
-#: src/main.c:2898
+#: src/main.c:3048
 #, c-format
 msgid "≈ %s of one core"
 msgstr ""
 
-#: src/main.c:2907
+#: src/main.c:3057
 #, c-format
 msgid "%s costs more than 1 %% of one core at this rate."
 msgstr ""
 
-#: src/main.c:2910
+#: src/main.c:3060
 #, c-format
 msgid "%d rows cost more than 1 %% of one core at this rate."
 msgstr ""
 
-#: src/main.c:2920
+#: src/main.c:3070
 #, c-format
 msgid "Nothing saved yet. Change anything and it is written to %s."
 msgstr ""
 
-#: src/main.c:2929
+#: src/main.c:3079
 #, c-format
 msgid "Not saved: %s"
 msgstr ""
 
-#: src/main.c:2950
+#: src/main.c:3100
 #, c-format
 msgid "Saved, but the app could not restart: %s"
 msgstr ""
 
-#: src/main.c:2951
+#: src/main.c:3101
 msgid "unknown reason"
 msgstr ""
 
-#: src/main.c:2987
+#: src/main.c:3137
 #, c-format
 msgid "%g s"
 msgstr ""
 
-#: src/main.c:3070
+#: src/main.c:3223
 msgid "Language"
 msgstr ""
 
-#: src/main.c:3078
+#: src/main.c:3231
 msgid "Follow the system"
 msgstr ""
 
-#: src/main.c:3083
+#: src/main.c:3236
 msgid "restarts the app"
 msgstr ""
 
-#: src/main.c:3539
+#: src/main.c:3697
 msgid "Sensor"
 msgstr ""
 
-#: src/main.c:3539
+#: src/main.c:3697
 msgid "Value"
 msgstr ""
 
-#: src/main.c:3639
+#: src/main.c:3797
 msgid "Source"
 msgstr ""
 
-#: src/main.c:3639
+#: src/main.c:3797
 msgid "Command"
 msgstr ""
 

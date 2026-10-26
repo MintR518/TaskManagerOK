@@ -8,8 +8,10 @@ the **Startup** tab (the XDG autostart entries of this session, with a switch
 that works without root) and the **Details** tab (the same processes with every
 column the kernel keeps about them — state, owner, lifetime CPU and byte
 counters, threads, priority, parent and command line) and the **Information**
-tab (what the machine is: distribution, processor and caches, memory modules,
-board and BIOS, display adapter and monitors, disks and the space left on them).
+tab (what the machine is: distribution, processor and caches, the speculative
+protections the kernel states, memory modules and swap, board and BIOS, display
+adapter and monitors, brightness and sound, disks with their queue settings and the
+space left on them, and the address each interface answers on).
 Performance also carries the power supplies: its **Battery** device lists every
 one the kernel publishes — the laptop's own cells and the wireless devices beside
 them — in place of the chart. A **gear** at the bottom of the rail opens
@@ -45,7 +47,7 @@ the shipped build:
 | CPU, Processes tab (4 s refresh) | 0.85 % of one core (0.382 s per 45 s) |
 | CPU, Details tab (6 s refresh) | 0.89 % of one core (0.400 s per 45 s) |
 | CPU, Startup tab (scanned when the tab opens) | 0.25 % of one core (0.110 s per 45 s) |
-| CPU, Information tab (read once when the tab opens) | 0.41 % of one core (0.185 s per 45 s) |
+| CPU, Information tab (read once when the tab opens) | 0.36 % of one core (0.164 s per 45 s) |
 | CPU, Performance tab with the Battery device selected (one scan every 5 s) | 0.38 % of one core (0.172 s per 45 s) |
 | CPU, machine saturated, Performance tab (2 busy loops + direct disk writes) | 0.22 % of one core |
 | CPU, pointer swept continuously over the graph, Performance tab, 125 events/s | 0.81 % of one core |
@@ -97,10 +99,12 @@ The four tab figures and the resident memory are from one session on a freshly
 booted machine; the two stress rows and the Startup time come from an earlier
 session on the same machine when the list held 206 processes. Nothing in the
 drawing path has changed between them. The Information row is from neither: it is
-the current build in today's session, 203 processes, measured twice back to back
-— the tab open and then the Processes tab — where the two came out 0.41 % and
-0.40 % of a core, which is why it is quoted beside them rather than inside that
-older set. The Battery row is the same build with the Battery device selected
+the current build in a later session, 202 processes and an agent session loading
+the same machine, measured twice back to back — the tab open and then the Processes
+tab — where the two came out 0.36 % and 1.01 % of a core. The second of those is
+above this table's own Processes row for the same reason the stress rows are above
+theirs, so the pair is quoted together and neither is compared against a figure
+from another day. The Battery row is the same build with the Battery device selected
 instead of CPU: 0.38 % against the 0.34–0.43 % the other devices cost, which is
 what it should be, since the scan it runs every fifth second measures 1.1 ms of
 CPU on its own for the two supplies this machine publishes — nine of those scans
@@ -425,19 +429,24 @@ and nothing that needs another user's rights.
 ## Information
 
 The fifth rail icon opens a page with a list of sections on the left — System,
-Processor, Memory, Motherboard, Video, Disks — and two columns on the right: the
-name of a fact and the value it was read out of. It answers "what is this
-machine" without a terminal, so nothing on it moves and nothing on it is a
-measurement window:
+Processor, Processor protection, Memory, Motherboard, Display and audio, Disks,
+Network — and two columns on the right: the name of a fact and the value it was
+read out of. It answers "what is this machine" without a terminal, so nothing on
+it moves and nothing on it is a measurement window. The list is written after the
+machine has answered, not before: a section with nothing to say gets no line, so an
+old kernel that predates the vulnerability files and a host with no address on any
+interface each show a list of seven — and not the same seven.
 
 | Section | Rows | Source |
 |---|---|---|
-| System | distribution, kernel, architecture, session and desktop, host name, your user name, uptime | `/etc/os-release`, `/proc/sys/kernel/osrelease`, `uname()`, `gethostname()`, `getpwuid(geteuid())`, `XDG_SESSION_TYPE`, `XDG_CURRENT_DESKTOP`, `/proc/uptime` |
-| Processor | model, vendor, physical cores, logical processors, one row per cache level, frequency range, current frequency, scaling governor | `/proc/cpuinfo`, `/sys/devices/system/cpu/cpu0/cache/index*`, `cpuinfo_min_freq` / `cpuinfo_max_freq` / `scaling_cur_freq` / `scaling_governor`, `/proc/stat` |
-| Memory | installed, free, module type, module count, swap | `/proc/meminfo`, byte 3 of the SPD EEPROM at `/sys/bus/i2c/devices/*/eeprom`, `/proc/meminfo` |
+| System | distribution, kernel, architecture, session and desktop, host name, your user name, init system, boot mode, cgroup version, sleep states, uptime | `/etc/os-release`, `/proc/sys/kernel/osrelease`, `uname()`, `gethostname()`, `getpwuid(geteuid())`, `XDG_SESSION_TYPE`, `XDG_CURRENT_DESKTOP`, `/proc/1/comm`, the presence of `/sys/firmware/efi`, `/sys/fs/cgroup/cgroup.controllers`, `/sys/power/state` and `/sys/power/mem_sleep`, `/proc/uptime` |
+| Processor | model, vendor, physical cores, logical processors, one row per cache level, frequency range, current frequency, scaling governor, scaling driver | `/proc/cpuinfo`, `/sys/devices/system/cpu/cpu0/cache/index*`, `cpuinfo_min_freq` / `cpuinfo_max_freq` / `scaling_cur_freq` / `scaling_governor` / `scaling_driver`, `/proc/stat` |
+| Processor protection | one row per speculative-execution flaw the kernel names, with the answer the kernel gives for it | `/sys/devices/system/cpu/vulnerabilities/*` — one file per flaw |
+| Memory | installed, free, module type, module count, swap used / total, then one row per swap area with its own size | `/proc/meminfo`, byte 3 of the SPD EEPROM at `/sys/bus/i2c/devices/*/eeprom`, `/proc/swaps` |
 | Motherboard | manufacturer, product, board, BIOS vendor and version, BIOS date, chassis type | `/sys/class/dmi/id/*` |
-| Video | adapter, driver, one row per monitor with its mode | `/sys/class/drm/card*`, the `device/driver` symlink, the monitor list from GDK |
-| Disks | one row per whole disk (model, SSD or HDD, capacity) and one per mounted file system (device, type, free / total) | `/sys/block/*`, `/proc/mounts` + `statvfs()` |
+| Display and audio | adapter, driver, one row per monitor with its mode, backlight level, sound card | `/sys/class/drm/card*`, the `device/driver` symlink, the monitor list from GDK, `/sys/class/backlight/*/brightness` with `max_brightness`, `/proc/asound/cards` |
+| Disks | one row per whole disk (model, SSD or HDD, capacity), one queue row per disk (scheduler, logical and physical block size, read-ahead, firmware revision) and one per mounted file system (device, type, free / total) | `/sys/block/*`, `queue/scheduler`, `queue/logical_block_size`, `queue/physical_block_size`, `queue/read_ahead_kb`, `device/rev`, `/proc/mounts` + `statvfs()` |
+| Network | one row per interface that answers, with its IPv4 address and prefix length | `getifaddrs()` from libc — no external command, no new dependency |
 
 Three rules hold that tab together:
 
@@ -447,17 +456,47 @@ Three rules hold that tab together:
   a machine whose firmware says nothing about memory slots loses the module row —
   which is the honest answer, and not a claim that the memory is soldered.
 - **Identifiers that are not the machine's engineering data are never read.** No
-  serial number, no `product_uuid`, no MAC — the files under `/sys/class/dmi/id/`
-  that hold them are not opened at all, so the tab stays as informative when it
-  is shared as it is when it is not.
-- **Everything is read once, when the tab opens** — 1.1 ms of wall clock and 1.1 ms
-  of CPU for the whole set on this machine, and it never runs again until the tab
-  is opened once more. Hardware does not change while the window is up, and a timer
-  would spend the budget to repeat an answer that is already on the screen. The
-  one number that does move, uptime, is taken from the sweep the other tabs already
-  run. With the tab open the program measured 0.41 % of one core over a 45 s window
-  — the same figure the Processes tab gives (0.40 % in the same session), because
-  what is being timed is a page that draws nothing on a timer.
+  serial number, no `product_uuid`, no MAC address — the files under
+  `/sys/class/dmi/id/` that hold them are not opened at all, and the interface row
+  gives the address the machine answers on rather than the burned-in hardware
+  address, so the tab stays as informative when it is shared as it is when it is
+  not. `device/rev` is the one exception on a disk: it is the firmware version of
+  the controller, which is engineering data you would quote in a bug report, not a
+  number that identifies your unit.
+- **Everything is read once, when the tab opens** — 2.3 ms of CPU for the whole
+  set on this machine (19 vulnerability files, four queue files, the swap table,
+  the backlight, the sound card and the address among them), and it never runs
+  again until the tab is opened once more. Hardware does not change while the
+  window is up, and a timer would spend the budget to repeat an answer that is
+  already on the screen. The one number that does move, uptime, is taken from the
+  sweep the other tabs already run. The additions cost 1.1 ms of that 2.3: the
+  same build without them measured 1.2 ms, timed in five alternating pairs on the
+  same machine in the same minute. With the tab open the program measured 0.36 %
+  of one core over a 45 s window (0.164 s of CPU), against 1.01 % for the Processes
+  tab in the next 45 s of that same session — the page that draws nothing on a
+  timer costs a third of the page that walks `/proc` on one.
+
+What the kernel calls a flaw is printed as the kernel calls it: `spectre_v2`,
+`Not affected`, `Mitigation: Retpolines`. Those strings are not translated, because
+they are the words a person types into a search box, and a translation of them
+would be a thing to decode rather than a thing to read — the same reason the disk
+row says `R5SL120G` and not a description of it. What the file holds beyond the
+first clause is not lost: `Mitigation: Retpolines; STIBP: disabled; RSB
+filling: enabled;` is a row that shows the first part and carries the whole line as
+a tooltip — the only place in this program where a value is shown in a shorter form
+than the machine stated it, and one hover away from being read in full. The swap
+rows use the same third column for the opposite reason: the priority of an area is
+a fact with no column of its own, and the brightness row uses it for the
+controller the level goes through.
+
+The section list once drew nothing. `gtk_list_box_insert()` does not show the row
+it inserts the way `gtk_box_pack()` shows a widget, so the list was mapped, sized
+and empty: no line to click, and every click in that column went to the table
+beside it, which took the selection and looked like a section that would not
+switch. `gtk_widget_show_all()` on the row is the whole fix; it sits in the loop
+that builds the list rather than at each call site because a row added later, on a
+machine that answers one more question than this one does, would have kept the same
+silence.
 
 The chassis row translates SMBIOS type 3 rather than printing the number, since
 `10` on a laptop screen tells you nothing; an unknown code keeps its number,
@@ -555,8 +594,15 @@ matching is done on the trimmed name instead.
   that way — soldered chips, DDR5 behind an I3C hub — gives no row rather than a
   wrong one; the display rows carry the mode GDK reports, not the panel's native
   mode; and the disk rows carry the capacity `/sys/block` gives, which is the
-  whole device, partitioned or not. Serial numbers and `product_uuid` are not
-  read at all, by design.
+  whole device, partitioned or not. The protection rows are the flaws the running
+  kernel chose to name, so a machine is never shown as having fewer of them than
+  it states — and never shown health data it does not state either, since that
+  would mean `smartctl`, and this program runs no external commands. The
+  brightness row exists only when a backlight class device answers both the
+  current and the maximum level, the sound row only when `/proc/asound/cards`
+  names a card, and the network rows carry the IPv4 address the interface answers
+  on, which is a lease rather than a fact about the hardware. Serial numbers,
+  `product_uuid` and MAC addresses are not read at all, by design.
 * **The Startup tab covers XDG autostart only** — the `.desktop` files the
   session reads at login. Things that start another way are not in the list and
   cannot be switched off from it: systemd user units

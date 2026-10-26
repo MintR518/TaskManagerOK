@@ -171,12 +171,41 @@ int stats_startup_set(StartupRow *r, int enable);
 #define INFO_CACHE 6
 #define INFO_DISK 8
 #define INFO_FS 8
+#define INFO_VULN 24
+#define INFO_SWAP 4
+#define INFO_NET 8
 
 typedef struct {
   char name[16], model[48];
   unsigned long long bytes;
   int rotational;
+  /* What the block layer decided about this disk. `rev` is the firmware
+     revision the device states, which is a version and not an identifier, so it
+     is fair to read where a serial number is not. Zero or empty means unsaid. */
+  char sched[40], rev[16];
+  int logical_bs, physical_bs;
+  long read_ahead_kb;
 } DiskInfo;
+
+/* One of the kernel's own answers about a speculative-execution flaw: the file
+   name is the flaw, `state` is the short answer the row shows, and `text` is the
+   whole line, which is too long for a column and belongs in a tooltip. */
+typedef struct {
+  char name[40], state[40], text[192];
+} VulnInfo;
+
+/* One row of /proc/swaps: where the kernel actually puts the pages that do not
+   fit in RAM. The totals the Memory section prints come from /proc/meminfo;
+   this says which file or partition holds them. */
+typedef struct {
+  char file[48], type[12];
+  unsigned long long size_kb, used_kb;
+  long prio;
+} SwapInfo;
+
+typedef struct {
+  char ifn[16], addr[48]; /* dotted address with the prefix length on the end */
+} NetInfo;
 
 /* One /dev/ row of /proc/mounts that statvfs answered for, with the free space
    a normal user may actually write into. */
@@ -200,6 +229,11 @@ typedef struct {
                     logical processors the system is running is already in SysStats:
                     one sweep of /proc/stat reads them all. */
   char cpu_gov[24];   /* the scaling governor in force on cpu0 */
+  char cpu_driver[24]; /* which driver runs it: acpi-cpufreq, intel_pstate … */
+
+  VulnInfo vuln[INFO_VULN]; /* /sys/devices/system/cpu/vulnerabilities */
+  int nvuln;
+
   long cpu_min_khz, cpu_max_khz; /* what the hardware says it can run at, 0 = unsaid */
   struct {
     int level, size_kb;
@@ -209,6 +243,21 @@ typedef struct {
 
   int mem_modules;   /* how many module EEPROMs the kernel saw; the type itself
                         is already in SysStats, sampled for the Memory page */
+  SwapInfo swap[INFO_SWAP];
+  int nswap;
+
+  /* The shape of the session rather than the desktop in it: what runs as pid 1,
+     whether the firmware handed the boot to an EFI stub, whether the unified
+     cgroup tree is mounted, and which sleep states the machine claims. */
+  char init_name[24], sleep_states[48], sleep_now[16];
+  int efi, cgroup_v2;
+
+  char audio[64];        /* the first card /proc/asound/cards names */
+  char backlight[24];    /* the controller the screen brightness goes through */
+  long bl_now, bl_max;   /* -1 when the driver states no number */
+
+  NetInfo net[INFO_NET]; /* the addresses this host answers on, loopback aside */
+  int nnet;
 
   char sys_vendor[64]; /* SMBIOS, all world-readable */
   char product[64];

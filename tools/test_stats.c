@@ -262,6 +262,7 @@ int main(void) {
   printf("  session    : '%s'  desktop '%s'\n", inf.session, inf.desktop);
   printf("  cpu        : '%s'  vendor '%s'  cores %d  gov '%s'  %.3f-%.3f GHz\n", inf.cpu_model,
          inf.cpu_vendor, inf.cpu_cores, inf.cpu_gov, inf.cpu_min_khz / 1e6, inf.cpu_max_khz / 1e6);
+  printf("  driver     : '%s'\n", inf.cpu_driver);
   for (int i = 0; i < inf.ncache; i++)
     printf("  cache      : L%d %-11s %5d KiB\n", inf.cache[i].level, inf.cache[i].type,
            inf.cache[i].size_kb);
@@ -275,6 +276,24 @@ int main(void) {
   for (int i = 0; i < inf.ndisk; i++)
     printf("  %-6s %-30.30s %6.1f GiB  %s\n", inf.disk[i].name, inf.disk[i].model,
            inf.disk[i].bytes / 1073741824.0, inf.disk[i].rotational ? "rotational" : "solid");
+  for (int i = 0; i < inf.ndisk; i++)
+    printf("  %-6s queue '%s' %d/%d B  ra %ld KiB  rev '%s'\n", inf.disk[i].name, inf.disk[i].sched,
+           inf.disk[i].logical_bs, inf.disk[i].physical_bs, inf.disk[i].read_ahead_kb,
+           inf.disk[i].rev);
+  printf("  vuln       : %d\n", inf.nvuln);
+  for (int i = 0; i < inf.nvuln; i++)
+    printf("  %-26.26s %-24.24s %s\n", inf.vuln[i].name, inf.vuln[i].state, inf.vuln[i].text);
+  printf("  swap       : %d\n", inf.nswap);
+  for (int i = 0; i < inf.nswap; i++)
+    printf("  %-24.24s %-10s %7.1f / %7.1f MiB  prio %ld\n", inf.swap[i].file, inf.swap[i].type,
+           inf.swap[i].used_kb / 1024.0, inf.swap[i].size_kb / 1024.0, inf.swap[i].prio);
+  printf("  session    : init '%s'  efi %d  cgroup2 %d\n", inf.init_name, inf.efi, inf.cgroup_v2);
+  printf("             : sleep '%s'  chosen '%s'\n", inf.sleep_states, inf.sleep_now);
+  printf("  audio      : '%s'\n", inf.audio);
+  printf("  backlight  : '%s'  %ld / %ld\n", inf.backlight, inf.bl_now, inf.bl_max);
+  printf("  net        : %d\n", inf.nnet);
+  for (int i = 0; i < inf.nnet; i++)
+    printf("  %-10s %s\n", inf.net[i].ifn, inf.net[i].addr);
   printf("  mounts     : %d\n", inf.nfs);
   for (int i = 0; i < inf.nfs; i++)
     printf("  %-10s %-24s %-8s %7.1f / %7.1f GiB free\n", inf.fs[i].dev, inf.fs[i].mnt,

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: taskmanagerok 0.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-26 15:01+0200\n"
+"POT-Creation-Date: 2026-10-26 16:43+0200\n"
 "PO-Revision-Date: 2026-10-25 02:00+0300\n"
 "Last-Translator: Armored420Train\n"
 "Language-Team: Ukrainian\n"
@@ -17,19 +17,19 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: src/main.c:122 src/main.c:3580
+#: src/main.c:122 src/main.c:3738
 msgid "CPU"
 msgstr "CPU"
 
-#: src/main.c:122 src/main.c:1097 src/main.c:1466 src/main.c:3580
+#: src/main.c:122 src/main.c:1100 src/main.c:1472 src/main.c:3738
 msgid "Memory"
 msgstr "Пам'ять"
 
-#: src/main.c:122 src/main.c:3580
+#: src/main.c:122 src/main.c:3738
 msgid "Disk"
 msgstr "Диск"
 
-#: src/main.c:122
+#: src/main.c:122 src/main.c:1473
 msgid "Network"
 msgstr "Мережа"
 
@@ -37,7 +37,7 @@ msgstr "Мережа"
 msgid "GPU"
 msgstr "GPU"
 
-#: src/main.c:123 src/main.c:2377
+#: src/main.c:123 src/main.c:2507
 #, c-format
 msgid "Temperature"
 msgstr "Температура"
@@ -46,134 +46,135 @@ msgstr "Температура"
 msgid "Battery"
 msgstr "Батарея"
 
-#: src/main.c:149 src/main.c:797 src/main.c:817 src/main.c:1435
+#: src/main.c:152 src/main.c:800 src/main.c:820 src/main.c:1438
 #, c-format
 msgid "Processes"
 msgstr "Процеси"
 
-#: src/main.c:149 src/main.c:3429
+#: src/main.c:152 src/main.c:3594
 msgid "Performance"
 msgstr "Продуктивність"
 
-#: src/main.c:149 src/main.c:1025
+#: src/main.c:152 src/main.c:1028
 msgid "Startup"
 msgstr "Автозавантаження"
 
-#: src/main.c:150 src/main.c:1422
+#: src/main.c:153 src/main.c:1425
 msgid "Details"
 msgstr "Деталі"
 
-#: src/main.c:150 src/main.c:1709
+#: src/main.c:153 src/main.c:1800
 msgid "Information"
 msgstr "Інформація"
 
-#: src/main.c:150 src/main.c:3116
+#: src/main.c:153 src/main.c:3269
 msgid "Settings"
 msgstr "Налаштування"
 
-#: src/main.c:282 src/main.c:2159 src/main.c:2161 src/main.c:2344
-#: src/main.c:2350 src/main.c:2355 src/main.c:2374
+#: src/main.c:285 src/main.c:2289 src/main.c:2291 src/main.c:2474
+#: src/main.c:2480 src/main.c:2485 src/main.c:2504
 #, c-format
 msgid "%.0f °C"
 msgstr "%.0f °C"
 
-#: src/main.c:284 src/main.c:598
+#: src/main.c:287 src/main.c:601
 #, c-format
 msgid "%.1f MB/s"
 msgstr "%.1f МБ/с"
 
-#: src/main.c:286 src/main.c:600
+#: src/main.c:289 src/main.c:603
 #, c-format
 msgid "%.0f KB/s"
 msgstr "%.0f КБ/с"
 
-#: src/main.c:295
+#: src/main.c:298
 #, c-format
 msgid "%.2f MB/s"
 msgstr "%.2f МБ/с"
 
-#: src/main.c:450
+#: src/main.c:453
 #, c-format
 msgid "  -%d s"
 msgstr "  -%d с"
 
-#: src/main.c:500
+#: src/main.c:503
+#, c-format
 msgid "-%d s"
 msgstr "-%d с"
 
-#: src/main.c:504 src/main.c:506
+#: src/main.c:507 src/main.c:509
 msgid "now"
 msgstr "зараз"
 
-#: src/main.c:584
+#: src/main.c:587
 #, c-format
 msgid "%.1f%%"
 msgstr "%.1f%%"
 
-#: src/main.c:589 src/main.c:1189 src/main.c:2302
+#: src/main.c:592 src/main.c:1192 src/main.c:2432
 #, c-format
 msgid "%.2f GiB"
 msgstr "%.2f ГіБ"
 
-#: src/main.c:591
+#: src/main.c:594
 #, c-format
 msgid "%.0f MiB"
 msgstr "%.0f МіБ"
 
-#: src/main.c:800 src/main.c:1425
+#: src/main.c:803 src/main.c:1428
 msgid "Collecting the process list"
 msgstr "Список процесів збирається"
 
-#: src/main.c:802 src/main.c:1427
+#: src/main.c:805 src/main.c:1430
 #, c-format
 msgid "%d processes  ·  updated every %d s"
 msgstr "%d процесів  ·  оновлення кожні %d с"
 
-#: src/main.c:810
+#: src/main.c:813
 #, c-format
 msgid "Total CPU"
 msgstr "ЦП усього"
 
-#: src/main.c:811 src/main.c:2299 src/main.c:2305 src/main.c:2380
+#: src/main.c:814 src/main.c:2429 src/main.c:2435 src/main.c:2510
 #, c-format
 msgid "%.2f / %.2f GiB"
 msgstr "%.2f / %.2f ГіБ"
 
-#: src/main.c:813
+#: src/main.c:816
 #, c-format
 msgid "Memory in use"
 msgstr "Використано пам'яті"
 
-#: src/main.c:815
+#: src/main.c:818
 #, c-format
 msgid "Disk activity"
 msgstr "Активність диска"
 
-#: src/main.c:816
+#: src/main.c:819
 #, c-format
 msgid "%d  ·  %d yours"
 msgstr "%d  ·  %d ваші"
 
-#: src/main.c:832 src/main.c:1047
+#: src/main.c:835 src/main.c:1050
 #, c-format
 msgid "Enabled"
 msgstr "Увімкнено"
 
-#: src/main.c:832 src/main.c:1050
+#: src/main.c:835 src/main.c:1053
 #, c-format
 msgid "Disabled"
 msgstr "Вимкнено"
 
-#: src/main.c:832 src/main.c:1054
+#: src/main.c:835 src/main.c:1057
 #, c-format
 msgid "Other desktop"
 msgstr "Інше середовище"
 
-#: src/main.c:909
+#: src/main.c:912
 msgid "Select an entry to change it"
 msgstr "Виберіть запис, щоб змінити його"
 
-#: src/main.c:911
+#: src/main.c:914
 msgid ""
 "This entry names another desktop; what decides is its OnlyShowIn line, not a "
 "switch"
@@ -181,44 +182,44 @@ msgstr ""
 "Цей запис називає інше середовище: вирішує його рядок OnlyShowIn, а не "
 "перемикач"
 
-#: src/main.c:913
+#: src/main.c:916
 msgid "The autostart directory of this user is not writable"
 msgstr "Каталог автозапуску цього користувача недоступний для запису"
 
-#: src/main.c:917
+#: src/main.c:920
 msgid "Do not start this at login"
 msgstr "Не запускати це при вході"
 
-#: src/main.c:917
+#: src/main.c:920
 msgid "Start this at login"
 msgstr "Запускати це при вході"
 
-#: src/main.c:921
+#: src/main.c:924
 msgid "Enable"
 msgstr "Увімкнути"
 
-#: src/main.c:921 src/main.c:3675
+#: src/main.c:924 src/main.c:3833
 msgid "Disable"
 msgstr "Вимкнути"
 
-#: src/main.c:943
+#: src/main.c:946
 #, c-format
 msgid "Could not change %s: %s"
 msgstr "Не вдалося змінити %s: %s"
 
-#: src/main.c:989 src/main.c:1538
+#: src/main.c:992 src/main.c:1560
 msgid "User"
 msgstr "Користувач"
 
-#: src/main.c:989 src/main.c:1466
+#: src/main.c:992 src/main.c:1472
 msgid "System"
 msgstr "Система"
 
-#: src/main.c:1014
+#: src/main.c:1017
 msgid "No autostart entries were found in the directories this session reads."
 msgstr "У каталогах автозапуску цього сеанса записів не знайдено."
 
-#: src/main.c:1017
+#: src/main.c:1020
 msgid ""
 "Only entries that name another desktop are never started here. The list "
 "stops at the first 160 entries."
@@ -226,460 +227,529 @@ msgstr ""
 "Лише записи, що вказують інше середовище, тут не запускаються. Список "
 "обмежено першими 160 записами."
 
-#: src/main.c:1021
+#: src/main.c:1024
 msgid "Only entries that name another desktop are never started here."
 msgstr "Лише записи, що вказують інше середовище, тут не запускаються."
 
-#: src/main.c:1034
+#: src/main.c:1037
 msgid "No entries"
 msgstr "Записів немає"
 
-#: src/main.c:1039
+#: src/main.c:1042
 #, c-format
 msgid "%d entries  ·  %d start at login"
 msgstr "%d записів  ·  %d запускається при вході"
 
-#: src/main.c:1044
+#: src/main.c:1047
 #, c-format
 msgid "Entries"
 msgstr "Записи"
 
-#: src/main.c:1095 src/main.c:3580 src/main.c:3639
+#: src/main.c:1098 src/main.c:3738 src/main.c:3797
 msgid "Name"
 msgstr "Назва"
 
-#: src/main.c:1095
+#: src/main.c:1098
 msgid "PID"
 msgstr "PID"
 
-#: src/main.c:1095
+#: src/main.c:1098
 msgid "Status"
 msgstr "Стан"
 
-#: src/main.c:1096
+#: src/main.c:1099
 msgid "User name"
 msgstr "Користувач"
 
-#: src/main.c:1096
+#: src/main.c:1099
 msgid "CPU time"
 msgstr "Час процесора"
 
-#: src/main.c:1096
+#: src/main.c:1099
 msgid "Time elapsed"
 msgstr "Час роботи"
 
-#: src/main.c:1097
+#: src/main.c:1100
 msgid "Disk read"
 msgstr "Читання з диска"
 
-#: src/main.c:1097
+#: src/main.c:1100
 msgid "Disk write"
 msgstr "Запис на диск"
 
-#: src/main.c:1098 src/main.c:1448
+#: src/main.c:1101 src/main.c:1451
 #, c-format
 msgid "Threads"
 msgstr "Потоки"
 
-#: src/main.c:1098
+#: src/main.c:1101
 msgid "Priority"
 msgstr "Пріоритет"
 
-#: src/main.c:1098
+#: src/main.c:1101
 msgid "Parent PID"
 msgstr "Батьківський PID"
 
-#: src/main.c:1099
+#: src/main.c:1102
 msgid "Command line"
 msgstr "Командний рядок"
 
-#: src/main.c:1121
+#: src/main.c:1124
 msgid "Running"
 msgstr "Виконується"
 
-#: src/main.c:1123
+#: src/main.c:1126
 msgid "Sleeping"
 msgstr "Сон"
 
-#: src/main.c:1125 src/main.c:1443
+#: src/main.c:1128 src/main.c:1446
 #, c-format
 msgid "Waiting for disk"
 msgstr "Чекає на диск"
 
-#: src/main.c:1127
+#: src/main.c:1130
 msgid "Zombie"
 msgstr "Зомбі"
 
-#: src/main.c:1130
+#: src/main.c:1133
 msgid "Stopped"
 msgstr "Зупинено"
 
-#: src/main.c:1132
+#: src/main.c:1135
 msgid "Idle"
 msgstr "Простій"
 
-#: src/main.c:1166
+#: src/main.c:1169
 #, c-format
 msgid "%lu:%02lu:%02lu"
 msgstr "%lu:%02lu:%02lu"
 
-#: src/main.c:1178
+#: src/main.c:1181
 #, c-format
 msgid "%lu d %02lu:%02lu"
 msgstr "%lu д %02lu:%02lu"
 
-#: src/main.c:1187
+#: src/main.c:1190
 #, c-format
 msgid "%.2f TiB"
 msgstr "%.2f ТіБ"
 
-#: src/main.c:1191
+#: src/main.c:1194
 #, c-format
 msgid "%.1f MiB"
 msgstr "%.1f МіБ"
 
-#: src/main.c:1193
+#: src/main.c:1196
 #, c-format
 msgid "%.0f KiB"
 msgstr "%.0f КіБ"
 
-#: src/main.c:1195
+#: src/main.c:1198
 #, c-format
 msgid "%llu B"
 msgstr "%llu Б"
 
-#: src/main.c:1204
+#: src/main.c:1207
 #, c-format
 msgid "real-time %ld"
 msgstr "реальний час %ld"
 
-#: src/main.c:1206
+#: src/main.c:1209
 #, c-format
 msgid "nice %d"
 msgstr "nice %d"
 
-#: src/main.c:1225
+#: src/main.c:1228
 #, c-format
 msgid "(%c)"
 msgstr "(%c)"
 
-#: src/main.c:1436
+#: src/main.c:1439
 #, c-format
 msgid "%d  ·  %.0f MiB"
 msgstr "%d  ·  %.0f МіБ"
 
-#: src/main.c:1437
+#: src/main.c:1440
 #, c-format
 msgid "Yours  ·  memory"
 msgstr "Ваші  ·  пам’ять"
 
-#: src/main.c:1466 src/main.c:2351
+#: src/main.c:1472 src/main.c:2481
 #, c-format
 msgid "Processor"
 msgstr "Процесор"
 
-#: src/main.c:1467
+#: src/main.c:1472
+msgid "Processor protection"
+msgstr "Захист процесора"
+
+#: src/main.c:1473
 msgid "Motherboard"
 msgstr "Системна плата"
 
-#: src/main.c:1467
-msgid "Video"
-msgstr "Відео"
+#: src/main.c:1473
+msgid "Display and audio"
+msgstr "Екран і звук"
 
-#: src/main.c:1467
+#: src/main.c:1473
 msgid "Disks"
 msgstr "Диски"
 
-#: src/main.c:1484
+#: src/main.c:1496
 msgid "Desktop computer"
 msgstr "Настільний комп'ютер"
 
-#: src/main.c:1485
+#: src/main.c:1497
 msgid "Low profile desktop"
 msgstr "Низькопрофільний настільний"
 
-#: src/main.c:1486
+#: src/main.c:1498
 msgid "Tower"
 msgstr "Вежа"
 
-#: src/main.c:1487
+#: src/main.c:1499
 msgid "Portable"
 msgstr "Портативний"
 
-#: src/main.c:1488
+#: src/main.c:1500
 msgid "Notebook"
 msgstr "Ноутбук"
 
-#: src/main.c:1489
+#: src/main.c:1501
 msgid "Hand held"
 msgstr "Ручний пристрій"
 
-#: src/main.c:1490
+#: src/main.c:1502
 msgid "Docking station"
 msgstr "Док-станція"
 
-#: src/main.c:1491
+#: src/main.c:1503
 msgid "All in one"
 msgstr "Моноблок"
 
-#: src/main.c:1492
+#: src/main.c:1504
 msgid "Subnotebook"
 msgstr "Субноутбук"
 
-#: src/main.c:1493
+#: src/main.c:1505
 msgid "Lunch box"
 msgstr "Ланчбокс"
 
-#: src/main.c:1494
+#: src/main.c:1506
 msgid "Server chassis"
 msgstr "Серверний корпус"
 
-#: src/main.c:1495
+#: src/main.c:1507
 msgid "Blade"
 msgstr "Лезова платформа"
 
-#: src/main.c:1527
+#: src/main.c:1549
 msgid "Operating system"
 msgstr "Операційна система"
 
-#: src/main.c:1528
+#: src/main.c:1550
 msgid "Kernel"
 msgstr "Ядро"
 
-#: src/main.c:1529
+#: src/main.c:1551
 msgid "Architecture"
 msgstr "Архітектура"
 
-#: src/main.c:1535
+#: src/main.c:1557
 msgid "Session"
 msgstr "Сеанс"
 
-#: src/main.c:1537
+#: src/main.c:1559
 msgid "Computer name"
 msgstr "Ім'я комп'ютера"
 
-#: src/main.c:1540
+#: src/main.c:1561
+msgid "Init system"
+msgstr "Система ініціалізації"
+
+#: src/main.c:1562
+msgid "Boot"
+msgstr "Завантаження"
+
+#: src/main.c:1562
+msgid "UEFI"
+msgstr "UEFI"
+
+#: src/main.c:1562
+msgid "Legacy BIOS"
+msgstr "Класичний BIOS"
+
+#: src/main.c:1563
+msgid "cgroup"
+msgstr "cgroup"
+
+#: src/main.c:1569
+msgid "Sleep"
+msgstr "Сон"
+
+#: src/main.c:1572
 msgid "Uptime"
 msgstr "Час роботи"
 
-#: src/main.c:1542
+#: src/main.c:1574
 msgid "Model"
 msgstr "Модель"
 
-#: src/main.c:1543
+#: src/main.c:1575
 msgid "Vendor"
 msgstr "Виробник"
 
-#: src/main.c:1546
+#: src/main.c:1578
 msgid "Cores"
 msgstr "Ядра"
 
-#: src/main.c:1547
+#: src/main.c:1579
 msgid "Logical processors"
 msgstr "Логічні процесори"
 
-#: src/main.c:1554
+#: src/main.c:1586
 msgid "Data"
 msgstr "дані"
 
-#: src/main.c:1555
+#: src/main.c:1587
 msgid "Instruction"
 msgstr "інструкції"
 
-#: src/main.c:1556
+#: src/main.c:1588
 msgid "Unified"
 msgstr "уніфікований"
 
-#: src/main.c:1570
+#: src/main.c:1602
 #, c-format
 msgid "Cache L%d"
 msgstr "Кеш L%d"
 
-#: src/main.c:1574
+#: src/main.c:1606
 msgid "Speed range"
 msgstr "Діапазон частот"
 
-#: src/main.c:1574
+#: src/main.c:1606
 #, c-format
 msgid "%.2f–%.2f GHz"
 msgstr "%.2f–%.2f ГГц"
 
-#: src/main.c:1576
+#: src/main.c:1608
 msgid "Current speed"
 msgstr "Поточна частота"
 
-#: src/main.c:1576 src/main.c:2280
+#: src/main.c:1608 src/main.c:2410
 #, c-format
 msgid "%.2f GHz"
 msgstr "%.2f ГГц"
 
-#: src/main.c:1577
+#: src/main.c:1609
 msgid "Speed control"
 msgstr "Регулятор частоти"
 
-#: src/main.c:1580 src/main.c:2330
+#: src/main.c:1610
+msgid "Speed driver"
+msgstr "Драйвер частоти"
+
+#: src/main.c:1620 src/main.c:2460
 #, c-format
 msgid "Total"
 msgstr "Разом"
 
-#: src/main.c:1582
+#: src/main.c:1622
 msgid "Free"
 msgstr "Вільно"
 
-#: src/main.c:1583
+#: src/main.c:1623
 msgid "Type"
 msgstr "Тип"
 
-#: src/main.c:1587
+#: src/main.c:1627
 msgid "Modules"
 msgstr "Модулі"
 
-#: src/main.c:1593
+#: src/main.c:1633
 msgid "Swap"
 msgstr "Підкачка"
 
-#: src/main.c:1596
+#: src/main.c:1642
+#, c-format
+msgid "priority %ld"
+msgstr "пріоритет %ld"
+
+#: src/main.c:1646
 msgid "Manufacturer"
 msgstr "Виробник"
 
-#: src/main.c:1597
+#: src/main.c:1647
 msgid "Product"
 msgstr "Пристрій"
 
-#: src/main.c:1603
+#: src/main.c:1653
 msgid "Board"
 msgstr "Плата"
 
-#: src/main.c:1610
+#: src/main.c:1660
 msgid "BIOS"
 msgstr "BIOS"
 
-#: src/main.c:1612
+#: src/main.c:1662
 msgid "BIOS date"
 msgstr "Дата BIOS"
 
-#: src/main.c:1616 src/main.c:1618
+#: src/main.c:1666 src/main.c:1668
 msgid "Chassis"
 msgstr "Корпус"
 
-#: src/main.c:1618
+#: src/main.c:1668
 #, c-format
 msgid "Type %d"
 msgstr "Тип %d"
 
-#: src/main.c:1621
+#: src/main.c:1671
 msgid "Adapter"
 msgstr "Адаптер"
 
-#: src/main.c:1624
+#: src/main.c:1674
 #, c-format
 msgid "%s (%s)"
 msgstr "%s (%s)"
 
-#: src/main.c:1627
+#: src/main.c:1677
 msgid "Driver"
 msgstr "Драйвер"
 
-#: src/main.c:1641
+#: src/main.c:1691
 #, c-format
 msgid "Display %d"
 msgstr "Екран %d"
 
-#: src/main.c:1643
+#: src/main.c:1693
 msgid "Display"
 msgstr "Екран"
 
-#: src/main.c:1645
+#: src/main.c:1695
 #, c-format
 msgid "%d×%d  ·  %.2f Hz"
 msgstr "%d×%d  ·  %.2f Гц"
 
-#: src/main.c:1647
+#: src/main.c:1697
 #, c-format
 msgid "%d×%d"
 msgstr "%d×%d"
 
-#: src/main.c:1794
+#: src/main.c:1703
+#, c-format
+msgid "%ld / %ld  ·  %d %%"
+msgstr "%ld / %ld  ·  %d %%"
+
+#: src/main.c:1705
+msgid "Brightness"
+msgstr "Яскравість"
+
+#: src/main.c:1707
+msgid "Sound"
+msgstr "Звук"
+
+#: src/main.c:1728
+#, c-format
+msgid "%d/%d B"
+msgstr "%d/%d Б"
+
+#: src/main.c:1735
+#, c-format
+msgid "Read-ahead %s"
+msgstr "Опережальне читання %s"
+
+#: src/main.c:1739
+#, c-format
+msgid "firmware %s"
+msgstr "прошивка %s"
+
+#: src/main.c:1743
+msgid "Queue"
+msgstr "Черга"
+
+#: src/main.c:1924
 msgid "Charging"
 msgstr "Заряджається"
 
-#: src/main.c:1796
+#: src/main.c:1926
 msgid "Discharging"
 msgstr "Розряджається"
 
-#: src/main.c:1798
+#: src/main.c:1928
 msgid "Fully charged"
 msgstr "Повністю заряджена"
 
-#: src/main.c:1800
+#: src/main.c:1930
 msgid "Plugged in, holding"
 msgstr "Мережа, зарядку обмежено"
 
-#: src/main.c:1800
+#: src/main.c:1930
 msgid "Not charging"
 msgstr "Не заряджається"
 
-#: src/main.c:1802
+#: src/main.c:1932
 msgid "Empty"
 msgstr "Розряджена"
 
-#: src/main.c:1884
+#: src/main.c:2014
 #, c-format
 msgid "%d %%"
 msgstr "%d %%"
 
-#: src/main.c:1896
+#: src/main.c:2026
 msgid "No level is reported for this battery"
 msgstr "Рівень цього акумулятора не повідомляється"
 
-#: src/main.c:1915
+#: src/main.c:2045
 #, c-format
 msgid "%lld mAh"
 msgstr "%lld мА·год"
 
-#: src/main.c:1918
+#: src/main.c:2048
 #, c-format
 msgid "wear %d %%"
 msgstr "знос %d %%"
 
-#: src/main.c:1920
+#: src/main.c:2050
 #, c-format
 msgid "cycles: %d"
 msgstr "циклів: %d"
 
-#: src/main.c:1987
+#: src/main.c:2117
 msgid "Devices"
 msgstr "Пристрої"
 
-#: src/main.c:1987
+#: src/main.c:2117
 msgid "Batteries"
 msgstr "Акумулятори"
 
-#: src/main.c:2023
+#: src/main.c:2153
 msgid "Peripherals only"
 msgstr "Лише акумулятори пристроїв"
 
-#: src/main.c:2042
+#: src/main.c:2172
 msgid "Level"
 msgstr "Рівень"
 
-#: src/main.c:2044 src/main.c:3639
+#: src/main.c:2174 src/main.c:3797
 msgid "State"
 msgstr "Стан"
 
-#: src/main.c:2049
+#: src/main.c:2179
 msgid "Time left"
 msgstr "Залишок часу"
 
-#: src/main.c:2049
+#: src/main.c:2179
 msgid "Time to full"
 msgstr "До повного заряду"
 
-#: src/main.c:2053
+#: src/main.c:2183
 msgid "Health"
 msgstr "Залишок ємності"
 
-#: src/main.c:2063
+#: src/main.c:2193
 msgid ""
 "CPU and memory cover every process; disk activity is only readable for the "
 "processes you own."
@@ -687,7 +757,7 @@ msgstr ""
 "Використання ЦП і пам’яті показано для всіх процесів; активність диска "
 "доступна лише для ваших."
 
-#: src/main.c:2065
+#: src/main.c:2195
 msgid ""
 "The byte counters come from the kernel's per-process io file, which only "
 "your own processes let anyone read."
@@ -695,198 +765,198 @@ msgstr ""
 "Лічильники байтів взято з файлу io кожного процесу: ядро відкриває його для "
 "читання лише вашим власним процесам."
 
-#: src/main.c:2213
+#: src/main.c:2343
 #, c-format
 msgid "%s  ·  %.2f GiB  ·  cache %.2f GiB"
 msgstr "%s  ·  %.2f ГіБ  ·  кеш %.2f ГіБ"
 
-#: src/main.c:2216
+#: src/main.c:2346
 #, c-format
 msgid "Installed: %.2f GiB  ·  cache %.2f GiB"
 msgstr "Установлено: %.2f ГіБ  ·  кеш %.2f ГіБ"
 
-#: src/main.c:2227
+#: src/main.c:2357
 #, c-format
 msgid "%s  ·  %ld Mbit/s"
 msgstr "%s  ·  %ld Мбіт/с"
 
-#: src/main.c:2229
+#: src/main.c:2359
 #, c-format
 msgid "%s  ·  Wi-Fi  ·  %d dBm  ·  quality %d"
 msgstr "%s  ·  Wi-Fi  ·  рівень %d дБм  ·  якість %d"
 
-#: src/main.c:2232
+#: src/main.c:2362
 #, c-format
 msgid "%s  ·  link speed unavailable"
 msgstr "%s  ·  швидкість каналу недоступна"
 
-#: src/main.c:2245
+#: src/main.c:2375
 #, c-format
 msgid "%d sensors  ·  highest %s  ·  limit %.0f °C"
 msgstr "%d датчикив  ·  найвищий %s  ·  межа %.0f °C"
 
-#: src/main.c:2248
+#: src/main.c:2378
 #, c-format
 msgid "%d sensors  ·  highest %s"
 msgstr "%d датчикив  ·  найвищий %s"
 
-#: src/main.c:2263
+#: src/main.c:2393
 msgid "This driver does not report GPU utilisation"
 msgstr "Цей драйвер не повідомляє завантаженість графічного процесора"
 
-#: src/main.c:2277 src/main.c:2297 src/main.c:2311 src/main.c:2371
+#: src/main.c:2407 src/main.c:2427 src/main.c:2441 src/main.c:2501
 #, c-format
 msgid "Load"
 msgstr "Завантаження"
 
-#: src/main.c:2282 src/main.c:2370 src/main.c:2376
+#: src/main.c:2412 src/main.c:2500 src/main.c:2506
 #, c-format
 msgid "Unavailable"
 msgstr "Недоступно"
 
-#: src/main.c:2283
+#: src/main.c:2413
 #, c-format
 msgid "Speed"
 msgstr "Швидкість"
 
-#: src/main.c:2285
+#: src/main.c:2415
 #, c-format
 msgid "%d processes · %d cores"
 msgstr "%d процесів · %d ядер"
 
-#: src/main.c:2286
+#: src/main.c:2416
 #, c-format
 msgid "System processor"
 msgstr "Системний процесор"
 
-#: src/main.c:2290
+#: src/main.c:2420
 #, c-format
 msgid "Uptime · %.2f average"
 msgstr "Час роботи · %.2f середнє"
 
-#: src/main.c:2300
+#: src/main.c:2430
 #, c-format
 msgid "In use / Total"
 msgstr "Використано / Загальний"
 
-#: src/main.c:2303
+#: src/main.c:2433
 #, c-format
 msgid "Available"
 msgstr "Доступно"
 
-#: src/main.c:2307
+#: src/main.c:2437
 #, c-format
 msgid "Paging file"
 msgstr "Файл підкачки"
 
-#: src/main.c:2314
+#: src/main.c:2444
 #, c-format
 msgid "Read"
 msgstr "Читання"
 
-#: src/main.c:2317
+#: src/main.c:2447
 #, c-format
 msgid "Write"
 msgstr "Запис"
 
-#: src/main.c:2319
+#: src/main.c:2449
 #, c-format
 msgid "%.0f GB"
 msgstr "%.0f ГБ"
 
-#: src/main.c:2320
+#: src/main.c:2450
 #, c-format
 msgid "Capacity"
 msgstr "Місткість"
 
-#: src/main.c:2324
+#: src/main.c:2454
 #, c-format
 msgid "Receive"
 msgstr "Отримання"
 
-#: src/main.c:2327
+#: src/main.c:2457
 #, c-format
 msgid "Send"
 msgstr "Відправка"
 
-#: src/main.c:2332
+#: src/main.c:2462
 #, c-format
 msgid "%.1f GiB received · %.1f GiB sent"
 msgstr "%.1f ГіБ отримано · %.1f ГіБ відправлено"
 
-#: src/main.c:2334
+#: src/main.c:2464
 #, c-format
 msgid "Interface totals"
 msgstr "Всього з інтерфейсу"
 
-#: src/main.c:2341 src/main.c:2360
+#: src/main.c:2471 src/main.c:2490
 #, c-format
 msgid "Sensors"
 msgstr "Датчики"
 
-#: src/main.c:2345
+#: src/main.c:2475
 #, c-format
 msgid "Highest"
 msgstr "Найвищий"
 
-#: src/main.c:2356 src/main.c:3539
+#: src/main.c:2486 src/main.c:3697
 #, c-format
 msgid "Limit"
 msgstr "Межа"
 
-#: src/main.c:2359
+#: src/main.c:2489
 #, c-format
 msgid "%d readable"
 msgstr "читається %d"
 
-#: src/main.c:2382
+#: src/main.c:2512
 #, c-format
 msgid "Dedicated memory"
 msgstr "Виділена пам’ять"
 
-#: src/main.c:2457
+#: src/main.c:2587
 msgid "this is the task manager itself"
 msgstr "це сам диспетчер завдань"
 
-#: src/main.c:2463
+#: src/main.c:2593
 #, c-format
 msgid "it is %s's process"
 msgstr "це процес користувача %s"
 
-#: src/main.c:2467
+#: src/main.c:2597
 msgid "it has already finished"
 msgstr "він уже завершився"
 
-#: src/main.c:2477
+#: src/main.c:2607
 #, c-format
 msgid "%s — %s"
 msgstr "%s — %s"
 
-#: src/main.c:2477 src/main.c:2479 src/main.c:2633
+#: src/main.c:2607 src/main.c:2609 src/main.c:2763
 msgid "End task"
 msgstr "Завершити завдання"
 
-#: src/main.c:2498
+#: src/main.c:2628
 #, c-format
 msgid "“%s” did not answer and cannot be terminated."
 msgstr "«%s» не відповів; примусово завершити не вдалося."
 
-#: src/main.c:2516
+#: src/main.c:2646
 #, c-format
 msgid "“%s” had already ended."
 msgstr "«%s» уже завершився."
 
-#: src/main.c:2518
+#: src/main.c:2648
 #, c-format
 msgid "Could not signal “%s”: %s"
 msgstr "Не вдалося надіслати сигнал «%s»: %s"
 
-#: src/main.c:2526
+#: src/main.c:2656
 #, c-format
 msgid "PID %d  ·  %s  ·  %s"
 msgstr "PID %d  ·  %s  ·  %s"
 
-#: src/main.c:2528
+#: src/main.c:2658
 #, c-format
 msgid ""
 "%s\n"
@@ -900,20 +970,20 @@ msgstr ""
 "просять завершитися самостійно, а якщо через %d с він ще буде тут — його "
 "завершать примусово."
 
-#: src/main.c:2533
+#: src/main.c:2663
 #, c-format
 msgid "End “%s”?"
 msgstr "Завершити «%s»?"
 
-#: src/main.c:2535
+#: src/main.c:2665
 msgid "_Cancel"
 msgstr "_Скасувати"
 
-#: src/main.c:2536
+#: src/main.c:2666
 msgid "_End task"
 msgstr "_Завершити завдання"
 
-#: src/main.c:2839
+#: src/main.c:2987
 msgid ""
 "Only the tab you are looking at is refreshed, so these four estimates are "
 "four separate answers rather than a total. They are measured on the machine "
@@ -924,90 +994,91 @@ msgstr ""
 "окремі відповіді, а не сума. Вони виміряні на машині, на якій писали цю "
 "програму, а таблиця ніколи не оновлюється частіше за графік над нею."
 
-#: src/main.c:2886 src/main.c:2996
+#: src/main.c:3034 src/main.c:3146
 msgid "Performance graph"
 msgstr "Графік «Продуктивності»"
 
-#: src/main.c:2886 src/main.c:2996
+#: src/main.c:3034 src/main.c:3146
 msgid "Process list"
 msgstr "Таблиця процесів"
 
-#: src/main.c:2887 src/main.c:2997
+#: src/main.c:3035 src/main.c:3147
 msgid "Details table"
 msgstr "Таблиця «Деталі»"
 
-#: src/main.c:2887 src/main.c:2997
+#: src/main.c:3035 src/main.c:3147
 msgid "Battery devices"
 msgstr "Акумулятори"
 
-#: src/main.c:2898
+#: src/main.c:3048
 #, c-format
 msgid "≈ %s of one core"
 msgstr "≈ %s одного ядра"
 
-#: src/main.c:2907
+#: src/main.c:3057
 #, c-format
 msgid "%s costs more than 1 %% of one core at this rate."
 msgstr "%s коштує більше за 1 %% одного ядра при такій частоті."
 
-#: src/main.c:2910
+#: src/main.c:3060
 #, c-format
 msgid "%d rows cost more than 1 %% of one core at this rate."
 msgstr "%d рядки коштують більше за 1 %% одного ядра при такій частоті."
 
-#: src/main.c:2920
+#: src/main.c:3070
 #, c-format
 msgid "Nothing saved yet. Change anything and it is written to %s."
 msgstr "Файл ще не створений. Змініть щось — і запис піде до %s."
 
-#: src/main.c:2929
+#: src/main.c:3079
 #, c-format
 msgid "Not saved: %s"
 msgstr "Не збережено: %s"
 
-#: src/main.c:2950
+#: src/main.c:3100
 #, c-format
 msgid "Saved, but the app could not restart: %s"
 msgstr "Збережено, але застосунок не зміг перезапуститися: %s"
 
-#: src/main.c:2951
+#: src/main.c:3101
 msgid "unknown reason"
 msgstr "причина невідома"
 
-#: src/main.c:2987
+#: src/main.c:3137
 #, c-format
 msgid "%g s"
 msgstr "%g с"
 
-#: src/main.c:3070
+#: src/main.c:3223
 msgid "Language"
 msgstr "Мова"
 
-#: src/main.c:3078
+#: src/main.c:3231
 msgid "Follow the system"
 msgstr "Як система"
 
-#: src/main.c:3083
+#: src/main.c:3236
 msgid "restarts the app"
 msgstr "перезапускає застосунок"
 
-#: src/main.c:3539
+#: src/main.c:3697
 msgid "Sensor"
 msgstr "Датчик"
 
-#: src/main.c:3539
+#: src/main.c:3697
 msgid "Value"
 msgstr "Значення"
 
-#: src/main.c:3639
+#: src/main.c:3797
 msgid "Source"
 msgstr "Джерело"
 
-#: src/main.c:3639
+#: src/main.c:3797
 msgid "Command"
 msgstr "Команда"
 
 #: src/settings.c:137
+#, c-format
 msgid "Could not create %s"
 msgstr "Не вдалося створити %s"
 
@@ -1015,15 +1086,14 @@ msgstr "Не вдалося створити %s"
 msgid "the settings could not be written"
 msgstr "не вдалося записати налаштування"
 
+#~ msgid "Video"
+#~ msgstr "Відео"
+
 #~ msgid "-60 s"
 #~ msgstr "-60 с"
 
 #~ msgid "The system reports no battery"
 #~ msgstr "Система не повідомляє жодного акумулятора"
-
-#, fuzzy
-#~ msgid "Processors online"
-#~ msgstr "Процесор"
 
 #, fuzzy
 #~ msgid "Solid state"

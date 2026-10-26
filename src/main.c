@@ -1458,23 +1458,32 @@ static void update_details_panel(void) {
 
 /* ---------- machine information tab ---------- */
 
-enum { K_KEY, K_VAL, KVCOL };
+enum { K_KEY, K_VAL, K_TIP, KVCOL };
 
 /* The section list is the same shape the Performance tab uses for its devices:
    pick one on the left, the card shows it. Six sections because those are the
    six questions a person asks about a machine — what system it runs, what
    processor and memory it has, who built the board, what draws the screen and
-   what stores the files. */
-#define INFO_SECTIONS 6
-static const char *info_sec_name[INFO_SECTIONS] = {N_("System"), N_("Processor"), N_("Memory"),
-                                                   N_("Motherboard"), N_("Video"), N_("Disks")};
+   what stores the files. The last three were added once the tab had been read
+   on real machines: what the kernel says about speculative execution, where the
+   swap actually lives, and what address this host answers on. */
+#define INFO_SECTIONS 8
+static const char *info_sec_name[INFO_SECTIONS] = {
+    N_("System"),    N_("Processor"), N_("Processor protection"), N_("Memory"),
+    N_("Motherboard"), N_("Display and audio"), N_("Disks"),      N_("Network")};
 
 /* A section never has more rows than this, and the count is what a machine with
-   every field readable produces. A machine that answers less shows less. */
-#define INFO_ROWS 16
+   every field readable produces — the protection list is the long one, at one
+   row per flaw the kernel names. A machine that answers less shows less. */
+#define INFO_ROWS 24
+#define INFO_VAL 192 /* the width of one value cell, and of the tooltip beside it */
+
+static int info_sec_ids[INFO_SECTIONS]; /* the sections that had something to say */
+static int ninfo_secs;
 
 static SysInfo inf;
-static int info_sec;
+static int info_sec, info_pos;
+static void rebuild_info_secs(void); /* the section list, once the collector has run */
 static GtkWidget *info_card, *info_scroll, *info_tree, *info_list, *info_sep;
 static GtkWidget *card_stack;
 static GtkListStore *info_store;
@@ -1500,28 +1509,38 @@ static const char *chassis_name(int c) {
   }
 }
 
+/* Join one more fact onto a value with the separator this tab already uses. The
+   two buffers are the same declared size, so the second write cannot cut the
+   first one short: what does not fit is left out whole. */
+static void info_join(char dst[INFO_VAL], const char *add) {
+  char joined[INFO_VAL];
+  FMT(joined, sizeof joined, "%s%s%s", dst, dst[0] ? "  ·  " : "", add);
+  snprintf(dst, INFO_VAL, "%s", joined);
+}
+
 /* The rows of one section, as two columns of text. A field that came back empty
    from the collector is not added at all, so the table can never show a blank
    answer or a placeholder; it shows the questions this machine can answer. */
-static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
+static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][INFO_VAL],
+                     char tp[INFO_ROWS][INFO_VAL]) {
   int n = 0;
-#define ADD_KEYVAL(key, val)                        \
-  do {                                              \
-    if (n < INFO_ROWS) {                            \
-      snprintf(k[n], sizeof k[n], "%s", (key));      \
-      snprintf(v[n], sizeof v[n], "%s", (val));      \
-      n++;                                          \
-    }                                               \
+/* The third column is the tooltip, and it is only ever filled where the visible
+   answer is a short form of a longer sentence the machine actually said. */
+#define ADD_TIP(key, val, tip)                             \
+  do {                                                     \
+    if (n < INFO_ROWS) {                                   \
+      snprintf(k[n], sizeof k[n], "%s", (key));            \
+      snprintf(v[n], sizeof v[n], "%s", (val));            \
+      snprintf(tp[n], sizeof tp[n], "%s", (tip));          \
+      n++;                                                 \
+    }                                                      \
   } while (0)
+#define ADD_KEYVAL(key, val) ADD_TIP(key, val, "")
 #define ADD_ROW(key, ...)                                    \
   do {                                                       \
     char ar_[192];                                           \
     FMT(ar_, sizeof ar_, __VA_ARGS__);                       \
-    if (n < INFO_ROWS) {                                     \
-      snprintf(k[n], sizeof k[n], "%s", (key));              \
-      snprintf(v[n], sizeof v[n], "%s", ar_);                \
-      n++;                                                   \
-    }                                                        \
+    ADD_TIP(key, ar_, "");                                   \
   } while (0)
 
   char buf[192];
@@ -1539,6 +1558,16 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
     }
     if (inf.hostname[0]) ADD_KEYVAL(_("Computer name"), inf.hostname);
     if (inf.user[0]) ADD_KEYVAL(_("User"), inf.user);
+    if (inf.init_name[0]) ADD_KEYVAL(_("Init system"), inf.init_name);
+    if (inf.efi >= 0) ADD_KEYVAL(_("Boot"), inf.efi ? _("UEFI") : _("Legacy BIOS"));
+    if (inf.cgroup_v2) ADD_KEYVAL(_("cgroup"), "v2");
+    if (inf.sleep_states[0]) {
+      if (inf.sleep_now[0])
+        FMT(buf, sizeof buf, "%s  ·  %s", inf.sleep_states, inf.sleep_now);
+      else
+        snprintf(buf, sizeof buf, "%s", inf.sleep_states);
+      ADD_KEYVAL(_("Sleep"), buf);
+    }
     fmt_elapsed((double)st.uptime_s, buf, sizeof buf);
     ADD_KEYVAL(_("Uptime"), buf);
   } else if (sec == 1) {
@@ -1578,7 +1607,15 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
     if (st.freq_ghz > 0)
       ADD_ROW(_("Current speed"), _("%.2f GHz"), st.freq_ghz);
     if (inf.cpu_gov[0]) ADD_KEYVAL(_("Speed control"), inf.cpu_gov);
+    if (inf.cpu_driver[0]) ADD_KEYVAL(_("Speed driver"), inf.cpu_driver);
   } else if (sec == 2) {
+    /* The kernel's own token for each flaw, unchanged: it is what a person
+       types into a search box, and the full sentence the file holds is one
+       hover away. A kernel that predates these files leaves the section out of
+       the list entirely rather than opening an empty table. */
+    for (int c = 0; c < inf.nvuln; c++)
+      ADD_TIP(inf.vuln[c].name, inf.vuln[c].state, inf.vuln[c].text);
+  } else if (sec == 3) {
     fmt_bytes((unsigned long long)(st.mem_total_kb * 1024), buf, sizeof buf);
     ADD_KEYVAL(_("Total"), buf);
     fmt_bytes((unsigned long long)(st.mem_avail_kb * 1024), buf, sizeof buf);
@@ -1595,7 +1632,17 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
       FMT(buf, sizeof buf, "%s / %s", a, b);
       ADD_KEYVAL(_("Swap"), buf);
     }
-  } else if (sec == 3) {
+    /* The total above says how much there is; these say what holds it, which is
+       the question a person asks when the file is on the slow disk. */
+    for (int c = 0; c < inf.nswap; c++) {
+      char a[40], b[40], pr[48];
+      fmt_bytes(inf.swap[c].used_kb * 1024, a, sizeof a);
+      fmt_bytes(inf.swap[c].size_kb * 1024, b, sizeof b);
+      FMT(buf, sizeof buf, "%s / %s  ·  %s", a, b, inf.swap[c].type);
+      FMT(pr, sizeof pr, _("priority %ld"), inf.swap[c].prio);
+      ADD_TIP(inf.swap[c].file, buf, pr);
+    }
+  } else if (sec == 4) {
     if (inf.sys_vendor[0]) ADD_KEYVAL(_("Manufacturer"), inf.sys_vendor);
     if (inf.product[0]) ADD_KEYVAL(_("Product"), inf.product);
     if (inf.board_vendor[0] || inf.board_name[0]) {
@@ -1620,7 +1667,7 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
       else
         ADD_ROW(_("Chassis"), _("Type %d"), inf.chassis);
     }
-  } else if (sec == 4) {
+  } else if (sec == 5) {
     if (st.gpu_present && st.gpu_name[0]) ADD_KEYVAL(_("Adapter"), st.gpu_name);
     if (inf.gpu_driver[0]) {
       if (inf.gpu_node[0])
@@ -1649,7 +1696,16 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
       else
         ADD_ROW(key, _("%d×%d"), g.width, g.height);
     }
-  } else {
+    /* The driver states steps, not per cent, and the step count differs
+       between firmware interfaces, so both numbers are printed and the ratio
+       next to them: 7 / 7 is what the knob is, 100 % is what it means. */
+    if (inf.bl_max > 0 && inf.bl_now >= 0) {
+      FMT(buf, sizeof buf, _("%ld / %ld  ·  %d %%"), inf.bl_now, inf.bl_max,
+          (int)(inf.bl_now * 100 / inf.bl_max));
+      ADD_TIP(_("Brightness"), buf, inf.backlight);
+    }
+    if (inf.audio[0]) ADD_KEYVAL(_("Sound"), inf.audio);
+  } else if (sec == 6) {
     for (int d = 0; d < inf.ndisk; d++) {
       char sz[40];
       fmt_bytes(inf.disk[d].bytes, sz, sizeof sz);
@@ -1661,6 +1717,32 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
       else
         FMT(buf, sizeof buf, "%s  ·  %s", kind, sz);
       ADD_KEYVAL(inf.disk[d].name, buf);
+
+      /* What the block layer decided about this disk, on its own line under
+         it. Every piece is optional, so a driver that states none of them adds
+         no row rather than a row of separators. */
+      char q[INFO_VAL] = "", one[80], key[96];
+      if (inf.disk[d].sched[0])
+        info_join(q, inf.disk[d].sched);
+      if (inf.disk[d].logical_bs > 0) {
+        FMT(one, sizeof one, _("%d/%d B"), inf.disk[d].logical_bs,
+            inf.disk[d].physical_bs > 0 ? inf.disk[d].physical_bs : inf.disk[d].logical_bs);
+        info_join(q, one);
+      }
+      if (inf.disk[d].read_ahead_kb >= 0) {
+        char sz[40];
+        fmt_bytes((unsigned long long)inf.disk[d].read_ahead_kb * 1024, sz, sizeof sz);
+        FMT(one, sizeof one, _("Read-ahead %s"), sz);
+        info_join(q, one);
+      }
+      if (inf.disk[d].rev[0]) {
+        FMT(one, sizeof one, _("firmware %s"), inf.disk[d].rev);
+        info_join(q, one);
+      }
+      if (q[0]) {
+        FMT(key, sizeof key, "%s  ·  %s", inf.disk[d].name, _("Queue"));
+        ADD_KEYVAL(key, q);
+      }
     }
     for (int f = 0; f < inf.nfs; f++) {
       char free_[40], total[40];
@@ -1669,6 +1751,9 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
       FMT(buf, sizeof buf, "%s  ·  %s  ·  %s / %s", inf.fs[f].dev, inf.fs[f].fstype, free_, total);
       ADD_KEYVAL(inf.fs[f].mnt, buf);
     }
+  } else {
+    for (int c = 0; c < inf.nnet; c++)
+      ADD_KEYVAL(inf.net[c].ifn, inf.net[c].addr);
   }
 #undef ADD_ROW
 #undef ADD_KEYVAL
@@ -1680,13 +1765,13 @@ static int info_rows(int sec, char k[INFO_ROWS][96], char v[INFO_ROWS][192]) {
 static void sync_info_rows(void) {
   if (!info_store)
     return;
-  static char k[INFO_ROWS][96], v[INFO_ROWS][192];
-  int want = info_rows(info_sec, k, v);
+  static char k[INFO_ROWS][96], v[INFO_ROWS][INFO_VAL], tp[INFO_ROWS][INFO_VAL];
+  int want = info_rows(info_sec, k, v, tp);
   GtkTreeIter it;
   int n = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(info_store), NULL);
   while (n < want) {
     gtk_list_store_append(info_store, &it);
-    gtk_list_store_set(info_store, &it, K_KEY, "", K_VAL, "", -1);
+    gtk_list_store_set(info_store, &it, K_KEY, "", K_VAL, "", K_TIP, NULL, -1);
     n++;
   }
   while (n > want) {
@@ -1698,13 +1783,16 @@ static void sync_info_rows(void) {
   for (int i = 0; i < want; i++) {
     if (!gtk_tree_model_iter_nth_child(GTK_TREE_MODEL(info_store), &it, NULL, i))
       break;
-    char *hk = NULL, *hv = NULL;
-    gtk_tree_model_get(GTK_TREE_MODEL(info_store), &it, K_KEY, &hk, K_VAL, &hv, -1);
-    gboolean diff = !hk || !hv || strcmp(hk, k[i]) != 0 || strcmp(hv, v[i]) != 0;
+    char *hk = NULL, *hv = NULL, *ht = NULL;
+    gtk_tree_model_get(GTK_TREE_MODEL(info_store), &it, K_KEY, &hk, K_VAL, &hv, K_TIP, &ht, -1);
+    gboolean diff = !hk || !hv || strcmp(hk, k[i]) != 0 || strcmp(hv, v[i]) != 0 ||
+                    (!!ht != !!tp[i][0] || (ht && tp[i][0] && strcmp(ht, tp[i]) != 0));
     g_free(hk);
     g_free(hv);
+    g_free(ht);
     if (diff)
-      gtk_list_store_set(info_store, &it, K_KEY, k[i], K_VAL, v[i], -1);
+      gtk_list_store_set(info_store, &it, K_KEY, k[i], K_VAL, v[i], K_TIP,
+                         tp[i][0] ? tp[i] : NULL, -1);
   }
 }
 
@@ -1717,6 +1805,8 @@ static void update_info_panel(void) {
     snprintf(sub, sizeof sub, "%s", inf.hostname);
   gtk_label_set_text(GTK_LABEL(page_sub), sub);
   set_stats(0, NULL, NULL);
+  if (ninfo_secs == 0)
+    rebuild_info_secs();
   sync_info_rows();
 }
 
@@ -1725,8 +1815,45 @@ static void on_info_row_selected(GtkListBox *box, GtkListBoxRow *row, gpointer u
   (void)u;
   if (!row)
     return;
-  info_sec = gtk_list_box_row_get_index(row);
+  int pos = gtk_list_box_row_get_index(row);
+  if (pos >= ninfo_secs)
+    return;
+  info_sec = info_sec_ids[pos];
+  info_pos = pos;
   sync_info_rows();
+}
+
+/* The list of sections is written after the collector has run, because a
+   section with nothing in it would be a line that opens an empty table: an old
+   kernel states no speculative-execution files, a machine with no address on any
+   interface states no network, and both are honest answers rather than gaps. */
+static void rebuild_info_secs(void) {
+  static char k[INFO_ROWS][96], v[INFO_ROWS][INFO_VAL], tp[INFO_ROWS][INFO_VAL];
+  GList *kids = gtk_container_get_children(GTK_CONTAINER(info_list));
+  for (GList *it = kids; it; it = it->next)
+    gtk_container_remove(GTK_CONTAINER(info_list), GTK_WIDGET(it->data));
+  g_list_free(kids);
+
+  ninfo_secs = 0;
+  for (int i = 0; i < INFO_SECTIONS; i++) {
+    if (info_rows(i, k, v, tp) == 0)
+      continue;
+    info_sec_ids[ninfo_secs++] = i;
+    GtkWidget *l = gtk_label_new(_(info_sec_name[i]));
+    gtk_widget_set_halign(l, GTK_ALIGN_START);
+    GtkWidget *row = gtk_list_box_row_new();
+    gtk_container_add(GTK_CONTAINER(row), l);
+    gtk_list_box_insert(GTK_LIST_BOX(info_list), row, -1);
+    /* A row of a list box is not shown by the insert, unlike the plain child of a
+       box: without this the list draws empty and the tab has no way to pick a
+       section at all. */
+    gtk_widget_show_all(row);
+  }
+  if (info_pos >= ninfo_secs)
+    info_pos = 0;
+  if (ninfo_secs > 0)
+    gtk_list_box_select_row(GTK_LIST_BOX(info_list),
+                            gtk_list_box_get_row_at_index(GTK_LIST_BOX(info_list), info_pos));
 }
 
 /* ---------- battery device ---------- */
@@ -3502,13 +3629,6 @@ int main(int argc, char **argv) {
   gtk_list_box_set_selection_mode(GTK_LIST_BOX(info_list), GTK_SELECTION_SINGLE);
   gtk_widget_set_size_request(info_list, 196, -1);
   gtk_box_pack_start(GTK_BOX(body), info_list, FALSE, FALSE, 0);
-  for (int i = 0; i < INFO_SECTIONS; i++) {
-    GtkWidget *l = gtk_label_new(_(info_sec_name[i]));
-    gtk_widget_set_halign(l, GTK_ALIGN_START);
-    GtkWidget *row = gtk_list_box_row_new();
-    gtk_container_add(GTK_CONTAINER(row), l);
-    gtk_list_box_insert(GTK_LIST_BOX(info_list), row, -1);
-  }
   g_signal_connect(info_list, "row-selected", G_CALLBACK(on_info_row_selected), NULL);
 
   info_sep = gtk_separator_new(GTK_ORIENTATION_VERTICAL);
@@ -3828,15 +3948,18 @@ int main(int argc, char **argv) {
   gtk_widget_set_margin_top(info_scroll, 4);
   gtk_box_pack_start(GTK_BOX(info_card), info_scroll, TRUE, TRUE, 0);
 
-  info_store = gtk_list_store_new(KVCOL, G_TYPE_STRING, G_TYPE_STRING);
+  info_store = gtk_list_store_new(KVCOL, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
   info_tree = gtk_tree_view_new_with_model(GTK_TREE_MODEL(info_store));
   g_object_unref(info_store);
   /* No header: the left column already names each row, and a header cell over it
      would have to be the name of both, which says nothing. */
   gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(info_tree), FALSE);
+  /* The third column is never drawn; it is the text a row shows when it has a
+     shorter form of something the machine said at length. */
+  gtk_tree_view_set_tooltip_column(GTK_TREE_VIEW(info_tree), K_TIP);
   gtk_container_add(GTK_CONTAINER(info_scroll), info_tree);
 
-  for (int i = 0; i < KVCOL; i++) {
+  for (int i = 0; i < 2; i++) {
     GtkCellRenderer *cr = gtk_cell_renderer_text_new();
     if (i == K_VAL)
       g_object_set(cr, "ellipsize", PANGO_ELLIPSIZE_END, NULL);

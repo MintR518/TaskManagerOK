@@ -1,16 +1,21 @@
 #define _GNU_SOURCE
 #include "stats.h"
 
+#include <arpa/inet.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <glob.h>
+#include <ifaddrs.h>
 #include <mntent.h>
+#include <net/if.h>
+#include <netinet/in.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/utsname.h>
@@ -1966,6 +1971,40 @@ static int info_modules(void) {
   return n;
 }
 
+/* What the block layer decided about this disk. `queue/scheduler` lists every
+   choice with the active one in brackets, so the brackets are what the row
+   answers; a disk whose driver states none of this keeps the fields empty and
+   contributes no row. `rev` is a firmware version, not a unit identifier. */
+static void info_queue(DiskInfo *k, const char *dev) {
+  char p[288];
+  unsigned long long u;
+  k->read_ahead_kb = -1;
+  snprintf(p, sizeof p, "/sys/block/%s/queue/logical_block_size", dev);
+  if (read_u64(p, &u))
+    k->logical_bs = (int)u;
+  snprintf(p, sizeof p, "/sys/block/%s/queue/physical_block_size", dev);
+  if (read_u64(p, &u))
+    k->physical_bs = (int)u;
+  snprintf(p, sizeof p, "/sys/block/%s/queue/read_ahead_kb", dev);
+  if (read_u64(p, &u))
+    k->read_ahead_kb = (long)u;
+  snprintf(p, sizeof p, "/sys/block/%s/queue/scheduler", dev);
+  char line[96];
+  if (read_line(p, line, sizeof line)) {
+    char *b = strchr(line, '[');
+    if (b) {
+      char *e = strchr(b, ']');
+      if (e)
+        *e = '\0';
+      scpy(k->sched, sizeof k->sched, trim(b + 1));
+    } else {
+      scpy(k->sched, sizeof k->sched, trim(line));
+    }
+  }
+  snprintf(p, sizeof p, "/sys/block/%s/device/rev", dev);
+  info_file(k->rev, sizeof k->rev, p);
+}
+
 static void info_disks(SysInfo *i) {
   DIR *d = opendir("/sys/block");
   if (!d)
@@ -1987,6 +2026,7 @@ static void info_disks(SysInfo *i) {
     k->rotational = read_u64(p, &rot) && rot;
     snprintf(p, sizeof p, "/sys/block/%s/device/model", e->d_name);
     info_file(k->model, sizeof k->model, p);
+    info_queue(k, e->d_name);
     i->ndisk++;
   }
   closedir(d);
@@ -2023,6 +2063,208 @@ static void info_filesystems(SysInfo *i) {
   endmntent(m);
 }
 
+/* ---------- the rest of the Information tab ---------- */
+
+/* The kernel writes one file per speculative-execution flaw it knows about, and
+   the answer is a sentence: "Mitigation: PTI", "Vulnerable: Clear CPU buffers
+   attempted, no microcode; SMT disabled". The row carries the leading answer and
+   the tooltip the whole line, because the sentence is only interesting once a
+   person has found the flaw they were asking about. */
+static void vuln_state(const char *text, char *out, size_t n) {
+  const char *semi = strchr(text, ';');
+  size_t len = semi ? (size_t)(semi - text) : strlen(text);
+  while (len && text[len - 1] == ' ')
+    len--;
+  /* Only a first clause that will not fit the column is cut back to its leading
+     word: "Mitigation: PTI" and "KVM: Mitigation: Split huge pages" are both
+     answers a person can read at a glance, and neither is a truncated one. */
+  if (len >= n) {
+    const char *colon = memchr(text, ':', len);
+    len = colon ? (size_t)(colon - text) : n - 1;
+    if (len >= n)
+      len = n - 1;
+  }
+  memcpy(out, text, len);
+  out[len] = '\0';
+}
+
+static int vuln_cmp(const void *a, const void *b) {
+  return strcmp(((const VulnInfo *)a)->name, ((const VulnInfo *)b)->name);
+}
+
+static void info_vulnerabilities(SysInfo *i) {
+  const char *dir = "/sys/devices/system/cpu/vulnerabilities";
+  DIR *d = opendir(dir);
+  if (!d)
+    return;
+  struct dirent *e;
+  while ((e = readdir(d)) && i->nvuln < INFO_VULN) {
+    if (e->d_name[0] == '.')
+      continue;
+    char p[320]; /* the directory plus a d_name the compiler cannot bound */
+    snprintf(p, sizeof p, "%s/%s", dir, e->d_name);
+    char line[192];
+    if (!read_line(p, line, sizeof line))
+      continue;
+    VulnInfo *v = &i->vuln[i->nvuln++];
+    scpy(v->name, sizeof v->name, e->d_name);
+    scpy(v->text, sizeof v->text, trim(line));
+    vuln_state(v->text, v->state, sizeof v->state);
+  }
+  closedir(d);
+  /* sysfs hands back the directory order, which is creation order and changes
+     with the kernel's own list; a table that reshuffles itself between two
+     openings of one tab cannot be read. */
+  if (i->nvuln > 1)
+    qsort(i->vuln, (size_t)i->nvuln, sizeof i->vuln[0], vuln_cmp);
+}
+
+static void info_swaps(SysInfo *i) {
+  FILE *f = fopen("/proc/swaps", "r");
+  if (!f)
+    return;
+  char line[256];
+  if (!fgets(line, sizeof line, f)) { /* the column names */
+    fclose(f);
+    return;
+  }
+  while (fgets(line, sizeof line, f) && i->nswap < INFO_SWAP) {
+    char file[64], type[16];
+    unsigned long long size, used;
+    long prio;
+    if (sscanf(line, "%63s %15s %llu %llu %ld", file, type, &size, &used, &prio) != 5)
+      continue;
+    SwapInfo *s = &i->swap[i->nswap++];
+    scpy(s->file, sizeof s->file, file);
+    scpy(s->type, sizeof s->type, type);
+    s->size_kb = size;
+    s->used_kb = used;
+    s->prio = prio;
+  }
+  fclose(f);
+}
+
+/* The shape of the session rather than the desktop inside it. All four answers
+   are a single world-readable file or a stat(), and each is left out of the tab
+   when its own source is missing: a container has no /sys/power/state, and a
+   system that booted through a BIOS hands out no /sys/firmware/efi. */
+static void info_session(SysInfo *i) {
+  info_file(i->init_name, sizeof i->init_name, "/proc/1/comm");
+  char line[96];
+  if (read_line("/sys/power/state", line, sizeof line))
+    scpy(i->sleep_states, sizeof i->sleep_states, trim(line));
+  if (read_line("/sys/power/mem_sleep", line, sizeof line)) {
+    char *b = strchr(line, '[');
+    if (b) {
+      char *e = strchr(b, ']');
+      if (e)
+        *e = '\0';
+      scpy(i->sleep_now, sizeof i->sleep_now, trim(b + 1));
+    }
+  }
+  /* Three answers, not two: a machine whose firmware directory is not mounted
+     at all — a container — knows nothing about how it was booted, and "Legacy
+     BIOS" there would be a claim rather than a reading. */
+  struct stat sb;
+  if (stat("/sys/firmware/efi", &sb) == 0)
+    i->efi = 1;
+  else if (stat("/sys/firmware", &sb) == 0)
+    i->efi = 0;
+  else
+    i->efi = -1;
+  i->cgroup_v2 = stat("/sys/fs/cgroup/cgroup.controllers", &sb) == 0;
+}
+
+/* One card per line, as `0 [Intel ]: HDA-Intel - HDA Intel`. The name the
+   driver gives comes second and is the one a person recognises, so the two are
+   swapped into "HDA Intel (HDA-Intel)". */
+static void info_audio(SysInfo *i) {
+  FILE *f = fopen("/proc/asound/cards", "r");
+  if (!f)
+    return;
+  char line[192];
+  while (fgets(line, sizeof line, f)) {
+    char *c = strstr(line, "]: ");
+    if (!c)
+      continue;
+    c += 3;
+    char *dash = strstr(c, " - ");
+    if (dash) {
+      *dash = '\0';
+      scpy(i->audio, sizeof i->audio, trim(dash + 3));
+      char one[64];
+      scpy(one, sizeof one, trim(c));
+      if (i->audio[0]) {
+        char joined[160];
+        snprintf(joined, sizeof joined, "%s (%s)", i->audio, one);
+        scpy(i->audio, sizeof i->audio, joined);
+      }
+    } else {
+      scpy(i->audio, sizeof i->audio, trim(c));
+    }
+    break;
+  }
+  fclose(f);
+}
+
+/* The knob the screen brightness goes through. Drivers disagree about whether
+   the value is a percentage, a step or a raw register, so the row shows the pair
+   the driver states and lets the ratio speak; a machine with no backlight class
+   device — a desktop, or a laptop whose firmware keeps the knob — gets no row. */
+static void info_backlight(SysInfo *i) {
+  i->bl_now = i->bl_max = -1;
+  DIR *d = opendir("/sys/class/backlight");
+  if (!d)
+    return;
+  struct dirent *e;
+  while ((e = readdir(d))) {
+    if (e->d_name[0] == '.')
+      continue;
+    char p[320]; /* the class path plus a d_name the compiler cannot bound */
+    unsigned long long now, max;
+    snprintf(p, sizeof p, "/sys/class/backlight/%s/brightness", e->d_name);
+    if (!read_u64(p, &now))
+      continue;
+    snprintf(p, sizeof p, "/sys/class/backlight/%s/max_brightness", e->d_name);
+    if (!read_u64(p, &max) || max == 0)
+      continue;
+    scpy(i->backlight, sizeof i->backlight, e->d_name);
+    i->bl_now = (long)now;
+    i->bl_max = (long)max;
+    break;
+  }
+  closedir(d);
+}
+
+/* getifaddrs walks the same kernel list `ip` prints, through libc: no external
+   program, no socket of its own, no privilege. Loopback and an interface still
+   at 0.0.0.0 answer nothing a person would read here, so they are skipped. */
+static void info_net(SysInfo *i) {
+  struct ifaddrs *first = NULL;
+  if (getifaddrs(&first) != 0)
+    return;
+  for (struct ifaddrs *p = first; p && i->nnet < INFO_NET; p = p->ifa_next) {
+    if (!p->ifa_addr || p->ifa_addr->sa_family != AF_INET || !p->ifa_netmask)
+      continue;
+    if (p->ifa_flags & IFF_LOOPBACK)
+      continue;
+    char ip[INET_ADDRSTRLEN];
+    const struct sockaddr_in *sa = (const struct sockaddr_in *)p->ifa_addr;
+    if (!inet_ntop(AF_INET, &sa->sin_addr, ip, sizeof ip))
+      continue;
+    if (!strcmp(ip, "0.0.0.0"))
+      continue;
+    unsigned m = ntohl(((const struct sockaddr_in *)p->ifa_netmask)->sin_addr.s_addr);
+    int bits = 0;
+    for (; m; m >>= 1)
+      bits += (int)(m & 1u);
+    NetInfo *n = &i->net[i->nnet++];
+    scpy(n->ifn, sizeof n->ifn, p->ifa_name);
+    snprintf(n->addr, sizeof n->addr, "%s/%d", ip, bits);
+  }
+  freeifaddrs(first);
+}
+
 void stats_collect_info(SysInfo *i) {
   memset(i, 0, sizeof *i);
 
@@ -2045,6 +2287,8 @@ void stats_collect_info(SysInfo *i) {
   info_cache(i);
   info_file(i->cpu_gov, sizeof i->cpu_gov,
             "/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor");
+  info_file(i->cpu_driver, sizeof i->cpu_driver,
+            "/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver");
   unsigned long long khz;
   if (read_u64("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_min_freq", &khz))
     i->cpu_min_khz = (long)khz;
@@ -2088,8 +2332,14 @@ void stats_collect_info(SysInfo *i) {
     }
   }
 
+  info_vulnerabilities(i);
   info_disks(i);
   info_filesystems(i);
+  info_swaps(i);
+  info_session(i);
+  info_audio(i);
+  info_backlight(i);
+  info_net(i);
 }
 
 /* ---------- batteries ---------- */
