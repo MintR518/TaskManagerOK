@@ -214,7 +214,9 @@ floor.
 
 Every row of the device list opens with a 16 px glyph of the device it names,
 drawn with the same Cairo strokes as the rail icons — no icon theme, no font, so
-a row cannot render as a missing-glyph box.
+a row cannot render as a missing-glyph box. That glyph is also all the row keeps
+when the list is folded: the words go, the seven devices stay where they were and
+remain clickable, and each one says its name in a tooltip.
 
 | Device | Chart | Numbers below | Source |
 |---|---|---|---|
@@ -537,9 +539,13 @@ matching is done on the trimmed name instead.
   Startup, Details and Information — and a sixth, the gear, pinned to the bottom of
   the rail rather than added to the stack, so that a stray click on the last tab
   cannot open Settings. Clicking the icon of the tab you are already on folds the
-  device list away and brings it back — a Performance-only gesture, so the other
-  four icons only switch tab — and with the list folded away there is no keyboard
-  way to change device. Switching tabs is a click: the rail is one drawing area
+  device list to its glyphs and back — a Performance-only gesture, so the other
+  four icons only switch tab. The fold takes the words off the rows and nothing
+  else: every glyph stays on the pixel it had, the rows still choose a device, the
+  choice survives the fold and the unfold, and the name a row gave up moves into
+  its tooltip, so a folded list is seven devices rather than seven unknowns. What
+  the fold does cost is the keyboard — with the list folded there is no way to
+  change device without the mouse. Switching tabs is a click: the rail is one drawing area
   and the icons are hit-tested by hand, so nothing in it takes focus. That also
   means the rail has no focusable widget and no arrow-key way to move between
   tabs; the tables themselves take the keyboard.

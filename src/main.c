@@ -127,6 +127,9 @@ static const int dev_unit[NDEV] = {U_PCT, U_PCT, U_RATE, U_RATE, U_PCT, U_TEMP, 
 static int nvisible;
 static int row_to_dev[NDEV];
 static int batt_row_at = -1; /* the Battery row's index in the list, -1 while absent */
+static gboolean dev_folded; /* the rail icon folds the list to its glyphs, not away */
+#define DEV_W_OPEN 196
+#define DEV_W_FOLDED 48 /* the row's own 6+10 px of margin and padding either side of a 16 px glyph */
 
 static GtkWidget *window, *dev_list, *dev_sep, *graph_area, *cores_area, *page_title, *page_sub, *note_label;
 static GtkWidget *rail, *head_sub, *perf_card, *proc_card, *proc_tree, *proc_scroll, *proc_note;
@@ -2734,9 +2737,29 @@ static gboolean on_draw_rail(GtkWidget *w, cairo_t *cr, gpointer data) {
   return FALSE;
 }
 
+/* A folded row keeps its glyph on the exact pixel it had and loses only the
+   words. The name moves into the tooltip, because a row that cannot say what it
+   is would be the same kind of control this program refuses to draw grey. */
+static void dev_row_folded(GtkListBoxRow *row, gboolean folded) {
+  GtkWidget *l = g_object_get_data(G_OBJECT(row), "dev_label");
+  if (!l)
+    return;
+  gtk_widget_set_visible(l, !folded);
+  gtk_widget_set_tooltip_text(GTK_WIDGET(row), folded ? g_object_get_data(G_OBJECT(row), "dev_tip") : NULL);
+}
+
+static void set_dev_folded(gboolean folded) {
+  dev_folded = folded;
+  gtk_widget_set_size_request(dev_list, folded ? DEV_W_FOLDED : DEV_W_OPEN, -1);
+  GList *rows = gtk_container_get_children(GTK_CONTAINER(dev_list));
+  for (GList *it = rows; it; it = it->next)
+    dev_row_folded(GTK_LIST_BOX_ROW(it->data), folded);
+  g_list_free(rows);
+}
+
 /* The rail is one drawing area, so the icons are hit-tested by hand. The five
    icons are the five tabs, in order. Clicking the icon of the tab you are
-   already on folds the device list away and back. */
+   already on folds the device list to its glyphs and back. */
 static gboolean on_rail_click(GtkWidget *w, GdkEventButton *ev, gpointer data) {
   (void)data;
   if (ev->button != 1)
@@ -2752,9 +2775,7 @@ static gboolean on_rail_click(GtkWidget *w, GdkEventButton *ev, gpointer data) {
     return FALSE;
   /* Anything below the last tab icon but above the gear is dead rail. */
   if (i == tab && tab == TAB_PERF) {
-    gboolean shown = gtk_widget_get_visible(dev_list);
-    gtk_widget_set_visible(dev_list, !shown);
-    gtk_widget_set_visible(dev_sep, !shown);
+    set_dev_folded(!dev_folded);
     return TRUE;
   }
   set_tab(i);
@@ -3349,6 +3370,10 @@ static void add_dev_row(int d, int wifi) {
   gtk_box_pack_start(GTK_BOX(box), l, FALSE, FALSE, 0);
   GtkWidget *row = gtk_list_box_row_new();
   gtk_container_add(GTK_CONTAINER(row), box);
+  g_object_set_data(G_OBJECT(row), "dev_label", l);
+  g_object_set_data_full(G_OBJECT(row), "dev_tip", g_strdup(b), g_free);
+  if (dev_folded)
+    dev_row_folded(GTK_LIST_BOX_ROW(row), TRUE);
   gtk_list_box_insert(GTK_LIST_BOX(dev_list), row, -1);
   row_to_dev[nvisible++] = d;
   if (d == DEV_BATT)
@@ -3459,7 +3484,7 @@ int main(int argc, char **argv) {
 
   dev_list = gtk_list_box_new();
   gtk_list_box_set_selection_mode(GTK_LIST_BOX(dev_list), GTK_SELECTION_SINGLE);
-  gtk_widget_set_size_request(dev_list, 196, -1);
+  gtk_widget_set_size_request(dev_list, DEV_W_OPEN, -1);
   g_signal_connect(dev_list, "row-selected", G_CALLBACK(on_row_selected), NULL);
   gtk_box_pack_start(GTK_BOX(body), dev_list, FALSE, FALSE, 0);
   /* The list has to know whether there is a battery at all before it is built;
