@@ -21,6 +21,45 @@ yours to change.
 Written in plain C against GTK 3 and Cairo, with no daemons, no interpreted
 runtime and no background services. The whole program is one binary.
 
+## Screenshots
+
+All six from the shipped build on the development machine — Mint 22.3 on X11,
+Ukrainian, window 1196x713 — with the numbers live rather than staged, so the
+processes at the top of the tables are the ones that were really working at the
+moment of the capture.
+
+**Performance** — the CPU device: one area chart, the two cores under it and the
+numbers along the bottom. The list on the left is the seven devices, last of them
+the battery.
+
+![The Performance tab with the CPU chart, the two per-core charts and the device list](docs/screenshots/performance.png)
+
+**Processes** — the same name / CPU / memory / disk table, sorted by CPU, with the
+row of numbers underneath it.
+
+![The Processes tab sorted by CPU](docs/screenshots/processes.png)
+
+**Startup** — the XDG autostart entries of the session, each with its state, where
+it came from and what it runs.
+
+![The Startup tab listing autostart entries with their state and source](docs/screenshots/startup.png)
+
+**Details** — every column the kernel keeps about a process: state, owner,
+lifetime, wall time, memory, both byte counters, threads, priority, parent and
+command line.
+
+![The Details tab with the full column set for the running processes](docs/screenshots/details.png)
+
+**Information** — what the machine states about itself, one section per kind of
+thing and only the rows it could actually read.
+
+![The Information tab on its System section](docs/screenshots/information.png)
+
+**Settings** — the four refresh rates, each with the fraction of one core it costs
+next to the control, and the interface language.
+
+![The Settings tab with the four cadences and the language choice](docs/screenshots/settings.png)
+
 ## Status
 
 The Performance, Processes, Startup, Details and Information tabs are
@@ -758,6 +797,7 @@ po/             translation catalogues (uk included)
 tools/test_stats.c   headless probe that prints every collected value
 tools/make-appimage.sh  portable single-file build
 data/           .desktop entry and icon
+docs/screenshots/  the six pictures at the top of this file
 ```
 
 ## License
